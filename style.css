@@ -42,6 +42,7 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: opacity 0.5s ease-in-out;
 }
 
 .box-svg {
@@ -146,13 +147,6 @@ h1 {
 .animation-space.state-decrypt-active .arrow-decrypt-in { opacity: 1; }
 .animation-space.state-decrypt-active .arrow-decrypt-out { opacity: 1; }
 
-/* Text Fade States */
-.box-svg .char-group {
-    transition: opacity 0.5s ease-in-out;
-}
-.box-svg.fade-out .char-group {
-    opacity: 0;
-}
 
 /* Math Panel */
 .math-panel {
@@ -176,7 +170,7 @@ h1 {
 }
 
 .binary-row .label {
-    width: 80px;
+    width: 110px;
     font-weight: bold;
     color: #666;
 }
@@ -253,4 +247,80 @@ h1 {
 
 .control-group input[type="range"] {
     flex-grow: 1;
+}
+
+/* Asymmetric Layout */
+.animation-space.asymmetric-layout {
+    height: 280px;
+}
+.key-pair-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 100%;
+    width: 120px;
+}
+.key-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+.key-label {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: #555;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.key-label.top {
+    margin-bottom: 5px;
+}
+.key-label.bottom {
+    margin-top: 5px;
+}
+
+/* Permanent Key Colors for Asymmetric */
+.key-container.public .key-svg .bg-circle {
+    fill: url(#encrypt-gradient) !important;
+    opacity: 1 !important;
+}
+.key-container.private .key-svg .bg-circle {
+    fill: url(#decrypt-gradient) !important;
+    opacity: 1 !important;
+}
+
+/* Wiggle & Pulse Animation for Active Key */
+.key-svg.active-key {
+    animation: wiggle-pulse-anim 1.2s infinite ease-in-out;
+}
+
+@keyframes wiggle-pulse-anim {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(4deg) scale(1.04); }
+    50% { transform: rotate(0deg) scale(1.08); }
+    75% { transform: rotate(-4deg) scale(1.04); }
+    100% { transform: rotate(0deg) scale(1); }
+}
+
+/* Diagonal Arrows for Asymmetric */
+.asymmetric-layout .connector-container {
+    height: 100%;
+}
+.asymmetric-layout .arrow-encrypt-in {
+    transform-origin: left center;
+    transform: rotate(-33deg) scaleX(1.2);
+}
+.asymmetric-layout .arrow-encrypt-out {
+    transform-origin: right center;
+    transform: rotate(33deg) scaleX(1.2);
+}
+.asymmetric-layout .arrow-decrypt-in {
+    transform-origin: right center;
+    transform: scaleX(-1.2) rotate(-33deg);
+}
+.asymmetric-layout .arrow-decrypt-out {
+    transform-origin: left center;
+    transform: scaleX(-1.2) rotate(33deg);
 }

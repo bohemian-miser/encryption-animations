@@ -19,7 +19,6 @@ const keyNodeVal = document.getElementById('key-node-val');
 // Arrow Elements
 const arrowL0Xor = document.querySelector('.arrow-l0-xor');
 const arrowR0F = document.querySelector('.arrow-r0-f');
-const arrowKeyF = document.querySelector('.arrow-key-f');
 const arrowFXor = document.querySelector('.arrow-f-xor');
 const arrowXorR1 = document.querySelector('.arrow-xor-r1');
 const arrowR0L1 = document.querySelector('.arrow-r0-l1');
@@ -106,8 +105,8 @@ function renderTextInBox(text, boxSvgElement) {
     const spacing = 55;
     const charWidth = 60;
     const totalWidth = (N - 1) * spacing + charWidth;
-    const startX = (240 - totalWidth) / 2;
-    const posY = 5; // adjusted for smaller box
+    const startX = (475.19 - totalWidth) / 2;
+    const posY = 18; // adjusted for 112.03 height and 0.8 scale
 
     for (let i = 0; i < N; i++) {
         const char = text[i];
@@ -137,12 +136,12 @@ function renderTextInBox(text, boxSvgElement) {
 }
 
 function resetArrows() {
-    [arrowL0Xor, arrowR0F, arrowKeyF, arrowFXor, arrowXorR1, arrowR0L1].forEach(arrow => {
+    [arrowL0Xor, arrowR0F, arrowFXor, arrowXorR1, arrowR0L1].forEach(arrow => {
         arrow.style.opacity = '0';
     });
 }
 
-function updateBoxTransitions() {
+function updateTransitions() {
     document.querySelectorAll('.box-container').forEach(el => {
         if (fadeEnabled) {
             el.style.transition = `opacity ${0.5 / animationSpeed}s ease-in-out`;
@@ -150,6 +149,20 @@ function updateBoxTransitions() {
             el.style.transition = 'none';
         }
     });
+    document.querySelectorAll('.feistel-arrow').forEach(el => {
+        if (fadeEnabled) {
+            el.style.transition = `opacity ${0.3 / animationSpeed}s ease-in-out`;
+        } else {
+            el.style.transition = 'none';
+        }
+    });
+    if (fBlockVal) {
+        if (fadeEnabled) {
+            fBlockVal.style.transition = `opacity ${0.3 / animationSpeed}s ease-in-out`;
+        } else {
+            fBlockVal.style.transition = 'none';
+        }
+    }
 }
 
 function getInputs() {
@@ -158,11 +171,10 @@ function getInputs() {
     const l0 = (val16 >> 8) & 0xFF;
     const r0 = val16 & 0xFF;
 
-    const keyHex = txtKey.value.replace(/\s+/g, '').padStart(4, '0');
-    const keyVal16 = parseInt(keyHex, 16) || 0;
-    const k0 = (keyVal16 >> 8) & 0xFF;
+    const keyHex = txtKey.value.replace(/\s+/g, '').padStart(2, '0');
+    const k0 = parseInt(keyHex, 16) || 0;
 
-    return { l0, r0, key: keyVal16, k0, val16 };
+    return { l0, r0, key: k0, k0, val16 };
 }
 
 function clearMathPanel() {
@@ -231,58 +243,55 @@ function runEncryptionCycle(onComplete) {
     currentTimeout = setTimeout(() => {
         arrowR0F.style.opacity = '1';
         
-        // Step 2: Key flows to F
+        // Step 2: F evaluates
         currentTimeout = setTimeout(() => {
-            arrowKeyF.style.opacity = '1';
+            fBlock.classList.add('active');
+            fBlockVal.textContent = format_hex8(fOut);
+            fBlockVal.classList.add('active');
+            arrowFXor.style.opacity = '1';
             
-            // Step 3: F evaluates
+            // Step 3: L0 flows to XOR
             currentTimeout = setTimeout(() => {
-                fBlock.classList.add('active');
-                fBlockVal.textContent = format_hex8(fOut);
-                fBlockVal.classList.add('active');
-                arrowFXor.style.opacity = '1';
+                arrowL0Xor.style.opacity = '1';
                 
-                // Step 4: L0 flows to XOR
+                // Step 4: Crossover R0 -> L1 (Diagonal arrow R0-L1 appears, L1 box appears!)
                 currentTimeout = setTimeout(() => {
-                    arrowL0Xor.style.opacity = '1';
+                    arrowR0L1.style.opacity = '1';
+                    renderTextInBox(format_left_split(l1), boxL1);
+                    l1Container.style.opacity = '1'; // bottom left appears
                     
-                    // Step 5: Crossover R0 -> L1 (Diagonal arrow R0-L1 appears, L1 box appears!)
+                    // Step 5: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
                     currentTimeout = setTimeout(() => {
-                        arrowR0L1.style.opacity = '1';
-                        renderTextInBox(format_left_split(l1), boxL1);
-                        l1Container.style.opacity = '1'; // bottom left appears
+                        xorGate.classList.add('active');
+                        arrowXorR1.style.opacity = '1';
+                        renderTextInBox(format_right_split(r1), boxR1);
+                        r1Container.style.opacity = '1'; // bottom right appears
                         
-                        // Step 6: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
+                        // Top boxes fade out if enabled
+                        l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                        r0Container.style.opacity = fadeEnabled ? '0' : '1';
+
+                        updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
+
+                        // Step 6: Reset arrows, keep bottom boxes
                         currentTimeout = setTimeout(() => {
-                            xorGate.classList.add('active');
-                            arrowXorR1.style.opacity = '1';
-                            renderTextInBox(format_right_split(r1), boxR1);
-                            r1Container.style.opacity = '1'; // bottom right appears
-                            
-                            // Top boxes fade out if enabled
-                            l0Container.style.opacity = fadeEnabled ? '0' : '1';
-                            r0Container.style.opacity = fadeEnabled ? '0' : '1';
-
-                            updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
-
-                            // Step 7: Reset arrows, keep bottom boxes
-                            currentTimeout = setTimeout(() => {
+                            if (fadeEnabled) {
                                 resetArrows();
                                 fBlock.classList.remove('active');
                                 xorGate.classList.remove('active');
                                 fBlockVal.classList.remove('active');
                                 fBlockVal.textContent = '';
-                                
-                                currentTimeout = setTimeout(() => {
-                                    activePhase = null;
-                                    if (onComplete) onComplete();
+                            }
+                            
+                            currentTimeout = setTimeout(() => {
+                                activePhase = null;
+                                if (onComplete) onComplete();
                                 }, t(800)); // end
                             }, t(1500)); // active
                         }, t(600)); // xor eval delay
                     }, t(500)); // crossover delay
                 }, t(500)); // l0 xor delay
             }, t(800)); // f eval display
-        }, t(500)); // key f delay
     }, t(300)); // idle
 }
 
@@ -339,59 +348,56 @@ function runDecryptionCycle(onComplete) {
     currentTimeout = setTimeout(() => {
         arrowR0F.style.opacity = '1';
         
-        // Step 2: Key flows to F
+        // Step 2: F evaluates
         currentTimeout = setTimeout(() => {
-            arrowKeyF.style.opacity = '1';
+            fBlock.classList.add('active');
+            fBlockVal.textContent = format_hex8(fOutDec);
+            fBlockVal.classList.add('active');
+            arrowFXor.style.opacity = '1';
             
-            // Step 3: F evaluates
+            // Step 3: decL0 flows to XOR
             currentTimeout = setTimeout(() => {
-                fBlock.classList.add('active');
-                fBlockVal.textContent = format_hex8(fOutDec);
-                fBlockVal.classList.add('active');
-                arrowFXor.style.opacity = '1';
+                arrowL0Xor.style.opacity = '1';
                 
-                // Step 4: decL0 flows to XOR
+                // Step 4: Crossover decR0 -> decL1 (Diagonal arrow R0-L1 appears, L1 box appears!)
                 currentTimeout = setTimeout(() => {
-                    arrowL0Xor.style.opacity = '1';
+                    arrowR0L1.style.opacity = '1';
+                    renderTextInBox(format_left_split(decL1), boxL1);
+                    l1Container.style.opacity = '1'; // bottom left appears
                     
-                    // Step 5: Crossover decR0 -> decL1 (Diagonal arrow R0-L1 appears, L1 box appears!)
+                    // Step 5: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
                     currentTimeout = setTimeout(() => {
-                        arrowR0L1.style.opacity = '1';
-                        renderTextInBox(format_left_split(decL1), boxL1);
-                        l1Container.style.opacity = '1'; // bottom left appears
+                        xorGate.classList.add('active');
+                        arrowXorR1.style.opacity = '1';
+                        renderTextInBox(format_right_split(decR1), boxR1);
+                        r1Container.style.opacity = '1'; // bottom right appears
                         
-                        // Step 6: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
+                        // Top boxes fade out if enabled
+                        l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                        r0Container.style.opacity = fadeEnabled ? '0' : '1';
+
+                        // Display math for decryption
+                        updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
+
+                        // Step 6: Reset arrows, keep bottom boxes
                         currentTimeout = setTimeout(() => {
-                            xorGate.classList.add('active');
-                            arrowXorR1.style.opacity = '1';
-                            renderTextInBox(format_right_split(decR1), boxR1);
-                            r1Container.style.opacity = '1'; // bottom right appears
-                            
-                            // Top boxes fade out if enabled
-                            l0Container.style.opacity = fadeEnabled ? '0' : '1';
-                            r0Container.style.opacity = fadeEnabled ? '0' : '1';
-
-                            // Display math for decryption
-                            updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
-
-                            // Step 7: Reset arrows, keep bottom boxes
-                            currentTimeout = setTimeout(() => {
+                            if (fadeEnabled) {
                                 resetArrows();
                                 fBlock.classList.remove('active');
                                 xorGate.classList.remove('active');
                                 fBlockVal.classList.remove('active');
                                 fBlockVal.textContent = '';
-                                
-                                currentTimeout = setTimeout(() => {
-                                    activePhase = null;
-                                    if (onComplete) onComplete();
+                            }
+                            
+                            currentTimeout = setTimeout(() => {
+                                activePhase = null;
+                                if (onComplete) onComplete();
                                 }, t(800)); // end
                             }, t(1500)); // active
                         }, t(600)); // xor eval delay
                     }, t(500)); // crossover delay
                 }, t(500)); // l0 xor delay
             }, t(800)); // f eval display
-        }, t(500)); // key f delay
     }, t(300)); // idle
 }
 
@@ -449,11 +455,7 @@ btnLoop.addEventListener('click', () => {
 rangeSpeed.addEventListener('input', (e) => {
     animationSpeed = parseFloat(e.target.value);
     valSpeed.textContent = animationSpeed.toFixed(1) + 'x';
-    
-    document.querySelectorAll('.feistel-arrow').forEach(el => {
-        el.style.transitionDuration = `${0.3 / animationSpeed}s`;
-    });
-    updateBoxTransitions();
+    updateTransitions();
 });
 
 // XOR Calculator Logic
@@ -480,7 +482,7 @@ function runCalculator() {
 // Fade Toggle Listener
 chkFade.addEventListener('change', () => {
     fadeEnabled = chkFade.checked;
-    updateBoxTransitions();
+    updateTransitions();
     if (activePhase === null) {
         // If not running, immediately reflect the fade setting on bottom boxes
         l1Container.style.opacity = fadeEnabled ? '0' : '1';
@@ -494,7 +496,7 @@ calcB.addEventListener('input', runCalculator);
 
 // Initialize
 fadeEnabled = chkFade.checked;
-updateBoxTransitions();
+updateTransitions();
 const { l0, r0, k0 } = getInputs();
 renderTextInBox(format_left_split(l0), boxL0);
 renderTextInBox(format_right_split(r0), boxR0);

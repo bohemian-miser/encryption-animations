@@ -471,11 +471,6 @@ h1 {
     top: 58px;
     transform: rotate(90deg) scaleX(0.55) scaleY(0.5);
 }
-.arrow-key-f {
-    left: 444px;
-    top: 119.5px;
-    transform: rotate(180deg) scaleX(0.2) scaleY(0.5);
-}
 .arrow-f-xor {
     left: 219px;
     top: 119.5px;
@@ -483,16 +478,16 @@ h1 {
 }
 .arrow-xor-r1 {
     left: 120px;
-    top: 175px;
+    top: 121px;
     width: 360px;
-    height: 108px;
+    height: 216px;
     transform: scaleX(-1) scaleY(0.5);
 }
 .arrow-r0-l1 {
     left: 120px;
-    top: 100px;
+    top: -56px;
     width: 360px;
-    height: 183px;
+    height: 452px;
     transform: scaleY(0.5);
 }
 

@@ -640,3 +640,54 @@ h1 {
     .github-corner .octo-arm { animation: octocat-wave 560ms ease-in-out; }
 }
 
+/* Page Switcher Navigation */
+.page-switcher {
+    margin-top: 30px;
+    text-align: center;
+    font-weight: bold;
+    border-top: 1px dashed #ccc;
+    padding-top: 15px;
+}
+.page-switcher a {
+    color: #007bff;
+    text-decoration: none;
+    margin: 0 10px;
+}
+.page-switcher a:hover {
+    text-decoration: underline;
+}
+.page-switcher a.active {
+    color: #333;
+    pointer-events: none;
+    text-decoration: none;
+}
+.page-switcher .divider {
+    color: #ccc;
+}
+
+/* Block Cipher Page Specifics */
+.box-outline.input-block {
+    fill: #e8f5e9 !important;
+}
+.box-outline.output-block {
+    fill: #ffebee !important;
+}
+.block-rect {
+    fill: #fff;
+    stroke: #151513;
+    stroke-width: 2px;
+}
+.block-rect.active {
+    fill: #ffeb3b;
+}
+.arrow-path {
+    stroke: #151513;
+    stroke-width: 2px;
+    fill: none;
+    transition: stroke 0.3s, stroke-width 0.3s;
+}
+.arrow-path.active {
+    stroke: #007bff;
+    stroke-width: 3.5px;
+}
+

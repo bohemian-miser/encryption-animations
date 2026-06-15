@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Ciphers - CBC Mode Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Diagram styling */
+        .block-diagram-space {
+            width: 800px;
+            height: 480px;
+            margin: 0 auto;
+            background: #fff;
+            border: 2px solid #333;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+        }
+        .block-svg-container {
+            width: 100%;
+            height: 100%;
+        }
+        .xor-circle {
+            fill: #fff;
+            stroke: #151513;
+            stroke-width: 2px;
+            transition: fill 0.3s;
+        }
+        .xor-circle.active {
+            fill: #ffeb3b;
+        }
+        .xor-text {
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+        .block-label {
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 11px;
+            fill: #666;
+            text-anchor: middle;
+        }
+        .block-val-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 13px;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .block-rect-text {
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 13px;
+            fill: #151513;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .math-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+        .math-list li {
+            margin-top: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #eee;
+        }
+        .math-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub Corner Octocat (Top Right) -->
+    <a href="https://github.com/bohemian-miser/encryption-animations" class="github-corner z-50" aria-label="View source on GitHub">
+        <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/>
+            <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/>
+            <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/>
+        </svg>
+    </a>
+
+    <div class="container" style="max-width: 900px;">
+        <h1>Cipher Block Chaining (CBC) Mode</h1>
+        
+        <div class="block-diagram-space">
+            <svg class="block-svg-container" id="diagram-svg" viewBox="0 0 800 480">
+                <defs>
+                    <!-- Reusable wobbly hand-drawn box from index.html -->
+                    <path id="wobbly-outline" d="M473.64,103.31q-6-23.85-9.92-48.07-2.07-13-3.49-26.07c-.56-5.15.43-13.23-3.1-17.66s-13.55-3.73-18.82-4.16c-8.93-.72-17.87-1.21-26.83-1.55-18.3-.7-36.63-.82-54.95-1Q245.78,3.73,135,4.54,76,5,17,5.93c.1-.68.19-1.36.3-2,.36-2.39-3.67-3.43-4-1-.16,1-.3,2.08-.46,3.12L9.62,6a1.9,1.9,0,1,0,0,3.8l2.59,0Q9,32.11,6.38,54.49q-1.48,13-2.73,26.09-.58,6.06-1.1,12.13c-.36,4.11-1.41,8.73-.93,12.82.79,6.65,9.73,4.78,14.92,4.7l29.12-.44,58.24-.88,235-3.56c44.23-.66,88.49-1.2,132.7.37A2,2,0,0,0,473.64,103.31Zm-226.22-.38-224.63,3.4c-4.14.06-13.09,1.73-15.77-1.1S6.57,94.62,6.9,90.84q1.23-14,2.74-28Q12.5,36.26,16.4,9.74,119.59,8.06,222.79,8q53.29,0,106.59.38c35.6.27,71.39-.11,106.88,2.62,4.89.38,12.55-.1,16.34,2.71,3.6,2.67,2.74,8.67,3.16,12.71q1.31,12.66,3.22,25.26,3.81,25.26,10,50.15C395.21,99.34,321.21,101.82,247.42,102.93Z"/>
+                    
+                    <!-- Arrow markers -->
+                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#151513" />
+                    </marker>
+                    <marker id="arrow-active" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#007bff" />
+                    </marker>
+                </defs>
+                <!-- SVG elements will be dynamically drawn by block.js -->
+            </svg>
+        </div>
+
+        <!-- Math Panel -->
+        <div class="math-panel" id="math-panel" style="margin-top: 20px;">
+            <h3>Block Chaining Process</h3>
+            <ul class="math-list" id="math-steps">
+                <li>Initialize the simulation to view chaining steps.</li>
+            </ul>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls" style="margin-top: 20px;">
+            <div class="control-group">
+                <label for="block-mode-select">Mode:</label>
+                <select id="block-mode-select">
+                    <option value="encrypt" selected>CBC Encryption</option>
+                    <option value="decrypt">CBC Decryption</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="plaintext-input">Plaintext Input (Hex / 16 chars):</label>
+                <input type="text" id="plaintext-input" value="AAAABBBBCCCCDDDD" maxlength="16" style="width: 180px;">
+            </div>
+            <div class="control-group">
+                <label for="key-input">Key (Hex, 4 chars):</label>
+                <input type="text" id="key-input" value="6A95" maxlength="4" style="width: 60px;">
+            </div>
+            <div class="control-group">
+                <label for="iv-input">IV (Hex, 4 chars):</label>
+                <input type="text" id="iv-input" value="1234" maxlength="4" style="width: 60px;">
+            </div>
+            <div class="control-group">
+                <button id="btn-encrypt">Run Animation</button>
+                <button id="btn-loop">Auto Loop</button>
+                <button id="btn-pause" style="display:none; background-color: #dc3545;">Pause</button>
+            </div>
+            <div class="control-group">
+                <label for="speed-input">Animation Speed:</label>
+                <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1">
+                <span id="speed-val">1.0x</span>
+            </div>
+        </div>
+
+        <div class="page-switcher">
+            <a href="index.html">Symmetric (XOR/AES)</a>
+            <span class="divider">|</span>
+            <a href="block.html" class="active">Block Ciphers (CBC)</a>
+            <span class="divider">|</span>
+            <a href="feistel.html">Feistel Round</a>
+            <span class="divider">|</span>
+            <a href="asymmetric.html">Asymmetric (RSA)</a>
+        </div>
+    </div>
+
+    <script type="module" src="block.js"></script>
+</body>
+</html>

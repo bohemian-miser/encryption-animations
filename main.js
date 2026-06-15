@@ -47,101 +47,58 @@ const BASE_TIMINGS = {
     decryptEnd: 400
 };
 
-// Helper to format Uint8Array to binary string with spaces
-function format_bin(bytes) {
-    return Array.from(bytes, byte => byte.toString(2).padStart(8, '0')).join(' ');
+// Helper to format 16-bit number to binary string with space
+function format_bin(val) {
+    const bin = val.toString(2).padStart(16, '0');
+    return bin.slice(0, 8) + ' ' + bin.slice(8);
 }
 
-// Helper to format Uint8Array to hex string with spaces
-function format_hex(bytes) {
-    return Array.from(bytes, byte => byte.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+// Helper to format 16-bit number to hex string with space
+function format_hex(val) {
+    const hex = val.toString(16).toUpperCase().padStart(4, '0');
+    return hex.slice(0, 2) + ' ' + hex.slice(2);
 }
 
 // Render text in SVG box using group translation
 function renderTextInBox(text, boxSvgElement) {
+    // Keep only the box outline path
     const boxPathGroup = boxSvgElement.querySelector('#box-path');
     boxSvgElement.innerHTML = '';
     if (boxPathGroup) {
         boxSvgElement.appendChild(boxPathGroup);
     }
 
-    const cleanText = text.replace(/\s+/g, '');
-    const N = cleanText.length;
+    const N = text.length;
+    const spacing = 65;
+    const charWidth = 60; // Estimated width
+    const totalWidth = (N - 1) * spacing + charWidth;
+    const startX = (475.19 - totalWidth) / 2;
+    const posY = 20; // Vertical offset to center Y [-10, 80] in [0, 112]
 
-    if (N > 8) {
-        // Render as 4x4 grid of bytes (AES mode, 32 hex characters = 16 bytes)
-        const numBytes = Math.min(Math.floor(N / 2), 16);
-        const colSpacing = 85;
-        const rowSpacing = 24;
-        const charScale = 0.24;
-        const byteCharSpacing = 16;
-        
-        const gridWidth = 3 * colSpacing + (byteCharSpacing + 60 * charScale); 
-        const gridHeight = 3 * rowSpacing + (80 * charScale); 
-        const startX = (475.19 - gridWidth) / 2;
-        const startY = (112.03 - gridHeight) / 2;
+    for (let i = 0; i < N; i++) {
+        const char = text[i];
+        if (char === ' ') continue;
 
-        for (let b = 0; b < numBytes; b++) {
-            const byteStr = cleanText.slice(b * 2, b * 2 + 2);
-            const col = b % 4;
-            const row = Math.floor(b / 4);
+        const paths = HEX_PATHS[char.toUpperCase()];
+        if (!paths) continue;
 
-            const bx = startX + col * colSpacing;
-            const by = startY + row * rowSpacing;
+        const x = startX + i * spacing;
 
-            for (let c = 0; c < 2; c++) {
-                const char = byteStr[c];
-                const paths = HEX_PATHS[char.toUpperCase()];
-                if (!paths) continue;
+        // Create group for character
+        const charGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        charGroup.setAttribute('class', 'char-group');
+        charGroup.setAttribute('transform', `translate(${x}, ${posY})`);
+        charGroup.style.transition = 'opacity 0.5s ease-in-out';
+        charGroup.style.opacity = '1'; // Default visible
 
-                const cx = bx + c * byteCharSpacing;
+        paths.forEach(d => {
+            const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            pathEl.setAttribute('d', d);
+            pathEl.setAttribute('fill', '#000');
+            charGroup.appendChild(pathEl);
+        });
 
-                const charGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                charGroup.setAttribute('class', 'char-group');
-                charGroup.setAttribute('transform', `translate(${cx}, ${by}) scale(${charScale})`);
-                charGroup.style.transition = 'opacity 0.5s ease-in-out';
-                charGroup.style.opacity = '1';
-
-                paths.forEach(d => {
-                    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    pathEl.setAttribute('d', d);
-                    pathEl.setAttribute('fill', '#000');
-                    charGroup.appendChild(pathEl);
-                });
-
-                boxSvgElement.appendChild(charGroup);
-            }
-        }
-    } else {
-        // Render in a single row (XOR mode, 4 hex characters = 2 bytes)
-        const spacing = 65;
-        const charWidth = 60;
-        const totalWidth = (N - 1) * spacing + charWidth;
-        const startX = (475.19 - totalWidth) / 2;
-        const posY = 20;
-
-        for (let i = 0; i < N; i++) {
-            const char = cleanText[i];
-            const paths = HEX_PATHS[char.toUpperCase()];
-            if (!paths) continue;
-
-            const x = startX + i * spacing;
-
-            const charGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            charGroup.setAttribute('class', 'char-group');
-            charGroup.setAttribute('transform', `translate(${x}, ${posY})`);
-            charGroup.style.transition = 'opacity 0.5s ease-in-out';
-            charGroup.style.opacity = '1';
-
-            paths.forEach(d => {
-                const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                pathEl.setAttribute('d', d);
-                pathEl.setAttribute('fill', '#000');
-                charGroup.appendChild(pathEl);
-            });
-
-            boxSvgElement.appendChild(charGroup);
-        }
+        boxSvgElement.appendChild(charGroup);
     }
 }
 
@@ -160,74 +117,95 @@ function bytesToHex(bytes) {
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-// Calculate Crypto values (XOR or AES ECB simulated)
+// Helper to convert 2-byte Uint8Array to 16-bit integer
+function bytesToVal(bytes) {
+    return (bytes[0] << 8) | bytes[1];
+}
+
+// Calculate Crypto values (XOR or AES-CTR)
 async function getCryptoValues() {
-    const plainHex = txtPlaintext.value.replace(/\s+/g, '');
-    const keyHex = txtKey.value.replace(/\s+/g, '');
+    const plainHex = txtPlaintext.value.padStart(4, '0');
+    const keyHex = txtKey.value.padStart(4, '0');
+    
+    const plainBytes = hexToBytes(plainHex);
+    const keyBytes = hexToBytes(keyHex);
     
     const algo = selectAlgo.value;
     
     if (algo === 'xor') {
-        // 16-bit XOR (2 bytes)
-        const plainBytes = hexToBytes(plainHex.padStart(4, '0').slice(0, 4));
-        const keyBytes = hexToBytes(keyHex.padStart(4, '0').slice(0, 4));
+        const plainVal = bytesToVal(plainBytes);
+        const keyVal = bytesToVal(keyBytes);
+        const cipherVal = plainVal ^ keyVal;
         
         const cipherBytes = new Uint8Array([
-            plainBytes[0] ^ keyBytes[0],
-            plainBytes[1] ^ keyBytes[1]
+            (cipherVal >> 8) & 0xFF,
+            cipherVal & 0xFF
         ]);
         
         return {
-            plainBytes,
-            keyBytes,
-            cipherBytes,
+            plainVal,
+            keyVal, // Direct key
+            cipherVal,
             cipherHex: bytesToHex(cipherBytes)
         };
     } else {
-        // 128-bit AES ECB simulation via AES-CBC with zero IV (16 bytes)
-        const plainBytes = hexToBytes(plainHex.padStart(32, '0').slice(0, 32));
-        const keyBytes = hexToBytes(keyHex.padStart(32, '0').slice(0, 32));
+        // Hash key to 256-bit (32 bytes)
+        const keyHash = await crypto.subtle.digest('SHA-256', keyBytes);
         
         const cryptoKey = await crypto.subtle.importKey(
             'raw',
-            keyBytes,
-            { name: 'AES-CBC' },
+            keyHash,
+            { name: 'AES-CTR' },
             false,
             ['encrypt', 'decrypt']
         );
         
-        const iv = new Uint8Array(16); // Zero IV
+        const counter = new Uint8Array(16); // All-zero counter block
         
+        // Encrypt plaintext to get ciphertext
         const cipherBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-CBC', iv },
+            { name: 'AES-CTR', counter, length: 64 },
             cryptoKey,
             plainBytes
         );
-        const cipherBytes = new Uint8Array(cipherBuffer).slice(0, 16);
+        const cipherBytes = new Uint8Array(cipherBuffer);
+        
+        // Encrypt all-zeros to get Keystream (for display)
+        const zeroBytes = new Uint8Array(plainBytes.length);
+        const keystreamBuffer = await crypto.subtle.encrypt(
+            { name: 'AES-CTR', counter, length: 64 },
+            cryptoKey,
+            zeroBytes
+        );
+        const keystreamBytes = new Uint8Array(keystreamBuffer);
+        
+        const plainVal = bytesToVal(plainBytes);
+        const keyVal = bytesToVal(keystreamBytes); // Use keystream as "key" visually
+        const cipherVal = bytesToVal(cipherBytes);
         
         return {
-            plainBytes,
-            keyBytes,
-            cipherBytes,
+            plainVal,
+            keyVal,
+            cipherVal,
             cipherHex: bytesToHex(cipherBytes)
         };
     }
 }
 
-function updateMathPanel(inputBytes, keyBytes, outputBytes, inputLabel = 'Input', outputLabel = 'Output') {
-    mathInputBin.textContent = format_bin(inputBytes);
-    mathInputHex.textContent = `(${format_hex(inputBytes)})`;
+function updateMathPanel(inputVal, keyVal, outputVal, inputLabel = 'Input', outputLabel = 'Output') {
+    mathInputBin.textContent = format_bin(inputVal);
+    mathInputHex.textContent = `(${format_hex(inputVal)})`;
     
-    mathKeyBin.textContent = format_bin(keyBytes);
-    mathKeyHex.textContent = `(${format_hex(keyBytes)})`;
+    mathKeyBin.textContent = format_bin(keyVal);
+    mathKeyHex.textContent = `(${format_hex(keyVal)})`;
     
-    mathOutputBin.textContent = format_bin(outputBytes);
-    mathOutputHex.textContent = `(${format_hex(outputBytes)})`;
+    mathOutputBin.textContent = format_bin(outputVal);
+    mathOutputHex.textContent = `(${format_hex(outputVal)})`;
     
     const algo = selectAlgo.value;
     if (algo === 'aes') {
-        mathKeyLabel.textContent = 'Key (AES Block):';
-        document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (AES-128 Block Cipher)`;
+        mathKeyLabel.textContent = 'Keystream:';
+        document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Keystream = ${outputLabel})`;
     } else {
         mathKeyLabel.textContent = 'Key:';
         document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Key = ${outputLabel})`;
@@ -236,28 +214,24 @@ function updateMathPanel(inputBytes, keyBytes, outputBytes, inputLabel = 'Input'
 
 // Clear Math Panel
 function clearMathPanel() {
-    const algo = selectAlgo.value;
-    const len = algo === 'aes' ? 16 : 2;
-    const zeros = new Uint8Array(len);
-    
-    mathInputBin.textContent = format_bin(zeros);
-    mathInputHex.textContent = `(${format_hex(zeros)})`;
-    mathKeyBin.textContent = format_bin(zeros);
-    mathKeyHex.textContent = `(${format_hex(zeros)})`;
-    mathOutputBin.textContent = format_bin(zeros);
-    mathOutputHex.textContent = `(${format_hex(zeros)})`;
+    mathInputBin.textContent = '00000000 00000000';
+    mathInputHex.textContent = '(00 00)';
+    mathKeyBin.textContent = '00000000 00000000';
+    mathKeyHex.textContent = '(00 00)';
+    mathOutputBin.textContent = '00000000 00000000';
+    mathOutputHex.textContent = '(00 00)';
 }
 
 // Animation Steps
 async function runEncryptionCycle(onComplete) {
-    const { plainBytes, keyBytes, cipherBytes } = await getCryptoValues();
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
     const t = (name) => BASE_TIMINGS[name] / animationSpeed;
 
     // Step 1: Idle state
     activePhase = 'encrypt';
     animSpace.className = 'animation-space';
     keyContainer.className = 'key-container neutral';
-    renderTextInBox(format_hex(plainBytes), leftBox);
+    renderTextInBox(format_hex(plainVal), leftBox);
     leftBoxContainer.style.opacity = '1';
     
     // Hide right box at start
@@ -273,10 +247,10 @@ async function runEncryptionCycle(onComplete) {
         currentTimeout = setTimeout(() => {
             // Step 3: Encrypt Active (Ciphertext appears, plaintext fades)
             animSpace.classList.add('state-encrypt-active');
-            renderTextInBox(format_hex(cipherBytes), rightBox);
+            renderTextInBox(format_hex(cipherVal), rightBox);
             rightBoxContainer.style.opacity = '1';
             leftBoxContainer.style.opacity = '0';
-            updateMathPanel(plainBytes, keyBytes, cipherBytes, 'Plain', 'Cipher');
+            updateMathPanel(plainVal, keyVal, cipherVal, 'Plain', 'Cipher');
 
             currentTimeout = setTimeout(() => {
                 // Step 4: Encrypt End (Arrows disappear, key resets)
@@ -293,12 +267,12 @@ async function runEncryptionCycle(onComplete) {
 }
 
 async function runDecryptionCycle(onComplete) {
-    const { plainBytes, keyBytes, cipherBytes } = await getCryptoValues();
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
     const t = (name) => BASE_TIMINGS[name] / animationSpeed;
 
     activePhase = 'decrypt';
     // Ensure right box has ciphertext, left box is hidden
-    renderTextInBox(format_hex(cipherBytes), rightBox);
+    renderTextInBox(format_hex(cipherVal), rightBox);
     rightBoxContainer.style.opacity = '1';
     leftBoxContainer.style.opacity = '0';
 
@@ -310,10 +284,10 @@ async function runDecryptionCycle(onComplete) {
         currentTimeout = setTimeout(() => {
             // Step 3: Decrypt Active (Plaintext appears, ciphertext fades)
             animSpace.classList.add('state-decrypt-active');
-            renderTextInBox(format_hex(plainBytes), leftBox);
+            renderTextInBox(format_hex(plainVal), leftBox);
             leftBoxContainer.style.opacity = '1';
             rightBoxContainer.style.opacity = '0';
-            updateMathPanel(cipherBytes, keyBytes, plainBytes, 'Cipher', 'Plain');
+            updateMathPanel(cipherVal, keyVal, plainVal, 'Cipher', 'Plain');
 
             currentTimeout = setTimeout(() => {
                 // Step 4: Decrypt End (Arrows disappear, key resets)
@@ -351,13 +325,14 @@ function runAutoLoop() {
     });
 }
 
+// Update initial visuals and math panel
 async function updateInitialVisuals() {
-    const { plainBytes, keyBytes, cipherBytes } = await getCryptoValues();
-    renderTextInBox(format_hex(plainBytes), leftBox);
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
+    renderTextInBox(format_hex(plainVal), leftBox);
     renderTextInBox('', rightBox);
     leftBoxContainer.style.opacity = '1';
     rightBoxContainer.style.opacity = '0';
-    updateMathPanel(plainBytes, keyBytes, cipherBytes, 'Plain', 'Cipher');
+    updateMathPanel(plainVal, keyVal, cipherVal, 'Plain', 'Cipher');
 }
 
 // Event Listeners
@@ -399,23 +374,6 @@ rangeSpeed.addEventListener('input', (e) => {
 selectAlgo.addEventListener('change', () => {
     const algo = selectAlgo.value;
     explanationPanel.style.display = algo === 'aes' ? 'block' : 'none';
-    
-    if (algo === 'aes') {
-        txtPlaintext.maxLength = 47;
-        txtKey.maxLength = 47;
-        txtPlaintext.value = '00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF';
-        txtKey.value = '00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F';
-        document.querySelector('label[for="plaintext-input"]').textContent = 'Plaintext (Hex, 16 bytes):';
-        document.querySelector('label[for="key-input"]').textContent = 'Key (Hex, 16 bytes):';
-    } else {
-        txtPlaintext.maxLength = 4;
-        txtKey.maxLength = 4;
-        txtPlaintext.value = 'AAAA';
-        txtKey.value = '6A95';
-        document.querySelector('label[for="plaintext-input"]').textContent = 'Plaintext (Hex, 4 chars):';
-        document.querySelector('label[for="key-input"]').textContent = 'Key (Hex, 4 chars):';
-    }
-    
     if (activePhase === null) {
         updateInitialVisuals();
     }
@@ -434,19 +392,5 @@ txtKey.addEventListener('input', () => {
 });
 
 // Initialize
-const initialAlgo = selectAlgo.value;
-if (initialAlgo === 'aes') {
-    txtPlaintext.maxLength = 47;
-    txtKey.maxLength = 47;
-    txtPlaintext.value = '00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF';
-    txtKey.value = '00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F';
-    document.querySelector('label[for="plaintext-input"]').textContent = 'Plaintext (Hex, 16 bytes):';
-    document.querySelector('label[for="key-input"]').textContent = 'Key (Hex, 16 bytes):';
-} else {
-    txtPlaintext.maxLength = 4;
-    txtKey.maxLength = 4;
-    txtPlaintext.value = 'AAAA';
-    txtKey.value = '6A95';
-}
-explanationPanel.style.display = initialAlgo === 'aes' ? 'block' : 'none';
+explanationPanel.style.display = selectAlgo.value === 'aes' ? 'block' : 'none';
 updateInitialVisuals();

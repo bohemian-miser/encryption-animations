@@ -16,6 +16,14 @@ const xorGate = document.getElementById('xor-gate');
 const fBlock = document.getElementById('f-block');
 const keyNodeVal = document.getElementById('key-node-val');
 
+// Arrow Elements
+const arrowL0Xor = document.querySelector('.arrow-l0-xor');
+const arrowR0F = document.querySelector('.arrow-r0-f');
+const arrowKeyF = document.querySelector('.arrow-key-f');
+const arrowFXor = document.querySelector('.arrow-f-xor');
+const arrowXorR1 = document.querySelector('.arrow-xor-r1');
+const arrowR0L1 = document.querySelector('.arrow-r0-l1');
+
 // Math Panel Elements
 const mathL0Val = document.getElementById('math-l0-val');
 const mathR0Val = document.getElementById('math-r0-val');
@@ -128,6 +136,22 @@ function renderTextInBox(text, boxSvgElement) {
     }
 }
 
+function resetArrows() {
+    [arrowL0Xor, arrowR0F, arrowKeyF, arrowFXor, arrowXorR1, arrowR0L1].forEach(arrow => {
+        arrow.style.opacity = '0';
+    });
+}
+
+function updateBoxTransitions() {
+    document.querySelectorAll('.box-container').forEach(el => {
+        if (fadeEnabled) {
+            el.style.transition = `opacity ${0.5 / animationSpeed}s ease-in-out`;
+        } else {
+            el.style.transition = 'none';
+        }
+    });
+}
+
 function getInputs() {
     const cleanHex = txtPlaintext.value.replace(/\s+/g, '').padStart(4, '0');
     const val16 = parseInt(cleanHex, 16) || 0;
@@ -177,15 +201,18 @@ function runEncryptionCycle(onComplete) {
     const l1 = r0;
     const finalOut = (l1 << 8) | r1;
 
-    const t = (name) => BASE_TIMINGS[name] / animationSpeed;
+    const t = (ms) => ms / animationSpeed;
 
     activePhase = 'encrypt';
     animSpace.className = 'animation-space feistel-layout';
     
-    // Reset nodes
+    // Reset nodes and arrows
     fBlock.classList.remove('active');
     xorGate.classList.remove('active');
+    fBlockVal.classList.remove('active');
+    fBlockVal.textContent = '';
     keyNodeVal.textContent = format_hex8(k0);
+    resetArrows();
 
     // Initial state: Top boxes visible with L0, R0
     renderTextInBox(format_left_split(l0), boxL0);
@@ -200,53 +227,63 @@ function runEncryptionCycle(onComplete) {
     r1Container.style.opacity = fadeEnabled ? '0' : '1';
     clearMathPanel();
 
+    // Step 1: R0 flows to F
     currentTimeout = setTimeout(() => {
-        // Step 2: Start (Arrows from L0, R0 active, Key to F)
-        animSpace.classList.add('state-feistel-start');
+        arrowR0F.style.opacity = '1';
         
+        // Step 2: Key flows to F
         currentTimeout = setTimeout(() => {
-            // Step 3: Middle (F block calculates, active, F to XOR arrow active)
-            animSpace.classList.remove('state-feistel-start');
-            animSpace.classList.add('state-feistel-middle');
-            fBlock.classList.add('active');
+            arrowKeyF.style.opacity = '1';
             
-            // Show intermediate value under F block
-            fBlockVal.textContent = format_hex8(fOut);
-            fBlockVal.classList.add('active');
-
+            // Step 3: F evaluates
             currentTimeout = setTimeout(() => {
-                // Step 4: Active (XOR active, crossover active, bottom boxes fade in)
-                animSpace.classList.remove('state-feistel-middle');
-                animSpace.classList.add('state-feistel-active');
-                xorGate.classList.add('active');
-
-                renderTextInBox(format_left_split(l1), boxL1);
-                renderTextInBox(format_right_split(r1), boxR1);
-                l1Container.style.opacity = '1';
-                r1Container.style.opacity = '1';
+                fBlock.classList.add('active');
+                fBlockVal.textContent = format_hex8(fOut);
+                fBlockVal.classList.add('active');
+                arrowFXor.style.opacity = '1';
                 
-                // Top boxes fade out if enabled
-                l0Container.style.opacity = fadeEnabled ? '0' : '1';
-                r0Container.style.opacity = fadeEnabled ? '0' : '1';
-
-                updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
-
+                // Step 4: L0 flows to XOR
                 currentTimeout = setTimeout(() => {
-                    // Reset arrows, keep bottom boxes
-                    animSpace.classList.remove('state-feistel-active');
-                    fBlock.classList.remove('active');
-                    xorGate.classList.remove('active');
-                    fBlockVal.classList.remove('active');
-                    fBlockVal.textContent = '';
+                    arrowL0Xor.style.opacity = '1';
                     
+                    // Step 5: Crossover R0 -> L1 (Diagonal arrow R0-L1 appears, L1 box appears!)
                     currentTimeout = setTimeout(() => {
-                        activePhase = null;
-                        if (onComplete) onComplete();
-                    }, t('end'));
-                }, t('active'));
-            }, t('middle'));
-        }, t('start'));
-    }, t('idle'));
+                        arrowR0L1.style.opacity = '1';
+                        renderTextInBox(format_left_split(l1), boxL1);
+                        l1Container.style.opacity = '1'; // bottom left appears
+                        
+                        // Step 6: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
+                        currentTimeout = setTimeout(() => {
+                            xorGate.classList.add('active');
+                            arrowXorR1.style.opacity = '1';
+                            renderTextInBox(format_right_split(r1), boxR1);
+                            r1Container.style.opacity = '1'; // bottom right appears
+                            
+                            // Top boxes fade out if enabled
+                            l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                            r0Container.style.opacity = fadeEnabled ? '0' : '1';
+
+                            updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
+
+                            // Step 7: Reset arrows, keep bottom boxes
+                            currentTimeout = setTimeout(() => {
+                                resetArrows();
+                                fBlock.classList.remove('active');
+                                xorGate.classList.remove('active');
+                                fBlockVal.classList.remove('active');
+                                fBlockVal.textContent = '';
+                                
+                                currentTimeout = setTimeout(() => {
+                                    activePhase = null;
+                                    if (onComplete) onComplete();
+                                }, t(800)); // end
+                            }, t(1500)); // active
+                        }, t(600)); // xor eval delay
+                    }, t(500)); // crossover delay
+                }, t(500)); // l0 xor delay
+            }, t(800)); // f eval display
+        }, t(500)); // key f delay
+    }, t(300)); // idle
 }
 
 // Decryption Cycle
@@ -272,15 +309,18 @@ function runDecryptionCycle(onComplete) {
     // Combined output should be L0, R0
     const finalOut = (decR1 << 8) | decL1; // L0 | R0
 
-    const t = (name) => BASE_TIMINGS[name] / animationSpeed;
+    const t = (ms) => ms / animationSpeed;
 
     activePhase = 'decrypt';
     animSpace.className = 'animation-space feistel-layout';
     
-    // Reset nodes
+    // Reset nodes and arrows
     fBlock.classList.remove('active');
     xorGate.classList.remove('active');
+    fBlockVal.classList.remove('active');
+    fBlockVal.textContent = '';
     keyNodeVal.textContent = format_hex8(k0);
+    resetArrows();
 
     // Initial state: Top boxes loaded with swapped inputs (R1 on left, L1 on right)
     renderTextInBox(format_left_split(decL0), boxL0);
@@ -295,54 +335,64 @@ function runDecryptionCycle(onComplete) {
     r1Container.style.opacity = fadeEnabled ? '0' : '1';
     clearMathPanel();
 
+    // Step 1: decR0 flows to F
     currentTimeout = setTimeout(() => {
-        // Step 2: Start
-        animSpace.classList.add('state-feistel-start');
+        arrowR0F.style.opacity = '1';
         
+        // Step 2: Key flows to F
         currentTimeout = setTimeout(() => {
-            // Step 3: Middle
-            animSpace.classList.remove('state-feistel-start');
-            animSpace.classList.add('state-feistel-middle');
-            fBlock.classList.add('active');
+            arrowKeyF.style.opacity = '1';
             
-            // Show intermediate value under F block
-            fBlockVal.textContent = format_hex8(fOutDec);
-            fBlockVal.classList.add('active');
-
+            // Step 3: F evaluates
             currentTimeout = setTimeout(() => {
-                // Step 4: Active (Outputs are decL1 and decR1)
-                animSpace.classList.remove('state-feistel-middle');
-                animSpace.classList.add('state-feistel-active');
-                xorGate.classList.add('active');
-
-                renderTextInBox(format_left_split(decL1), boxL1);
-                renderTextInBox(format_right_split(decR1), boxR1);
-                l1Container.style.opacity = '1';
-                r1Container.style.opacity = '1';
+                fBlock.classList.add('active');
+                fBlockVal.textContent = format_hex8(fOutDec);
+                fBlockVal.classList.add('active');
+                arrowFXor.style.opacity = '1';
                 
-                // Top boxes fade out if enabled
-                l0Container.style.opacity = fadeEnabled ? '0' : '1';
-                r0Container.style.opacity = fadeEnabled ? '0' : '1';
-
-                // Display math for decryption
-                updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
-
+                // Step 4: decL0 flows to XOR
                 currentTimeout = setTimeout(() => {
-                    // Reset
-                    animSpace.classList.remove('state-feistel-active');
-                    fBlock.classList.remove('active');
-                    xorGate.classList.remove('active');
-                    fBlockVal.classList.remove('active');
-                    fBlockVal.textContent = '';
+                    arrowL0Xor.style.opacity = '1';
                     
+                    // Step 5: Crossover decR0 -> decL1 (Diagonal arrow R0-L1 appears, L1 box appears!)
                     currentTimeout = setTimeout(() => {
-                        activePhase = null;
-                        if (onComplete) onComplete();
-                    }, t('end'));
-                }, t('active'));
-            }, t('middle'));
-        }, t('start'));
-    }, t('idle'));
+                        arrowR0L1.style.opacity = '1';
+                        renderTextInBox(format_left_split(decL1), boxL1);
+                        l1Container.style.opacity = '1'; // bottom left appears
+                        
+                        // Step 6: XOR evaluates (Arrow XOR-R1 appears, R1 box appears!)
+                        currentTimeout = setTimeout(() => {
+                            xorGate.classList.add('active');
+                            arrowXorR1.style.opacity = '1';
+                            renderTextInBox(format_right_split(decR1), boxR1);
+                            r1Container.style.opacity = '1'; // bottom right appears
+                            
+                            // Top boxes fade out if enabled
+                            l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                            r0Container.style.opacity = fadeEnabled ? '0' : '1';
+
+                            // Display math for decryption
+                            updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
+
+                            // Step 7: Reset arrows, keep bottom boxes
+                            currentTimeout = setTimeout(() => {
+                                resetArrows();
+                                fBlock.classList.remove('active');
+                                xorGate.classList.remove('active');
+                                fBlockVal.classList.remove('active');
+                                fBlockVal.textContent = '';
+                                
+                                currentTimeout = setTimeout(() => {
+                                    activePhase = null;
+                                    if (onComplete) onComplete();
+                                }, t(800)); // end
+                            }, t(1500)); // active
+                        }, t(600)); // xor eval delay
+                    }, t(500)); // crossover delay
+                }, t(500)); // l0 xor delay
+            }, t(800)); // f eval display
+        }, t(500)); // key f delay
+    }, t(300)); // idle
 }
 
 function stopAnimation() {
@@ -352,6 +402,7 @@ function stopAnimation() {
     xorGate.classList.remove('active');
     fBlockVal.classList.remove('active');
     fBlockVal.textContent = '';
+    resetArrows();
     l0Container.style.opacity = '1';
     r0Container.style.opacity = '1';
     l1Container.style.opacity = fadeEnabled ? '0' : '1';
@@ -402,9 +453,7 @@ rangeSpeed.addEventListener('input', (e) => {
     document.querySelectorAll('.feistel-arrow').forEach(el => {
         el.style.transitionDuration = `${0.3 / animationSpeed}s`;
     });
-    document.querySelectorAll('.box-container').forEach(el => {
-        el.style.transitionDuration = `${0.5 / animationSpeed}s`;
-    });
+    updateBoxTransitions();
 });
 
 // XOR Calculator Logic
@@ -431,6 +480,7 @@ function runCalculator() {
 // Fade Toggle Listener
 chkFade.addEventListener('change', () => {
     fadeEnabled = chkFade.checked;
+    updateBoxTransitions();
     if (activePhase === null) {
         // If not running, immediately reflect the fade setting on bottom boxes
         l1Container.style.opacity = fadeEnabled ? '0' : '1';
@@ -444,6 +494,7 @@ calcB.addEventListener('input', runCalculator);
 
 // Initialize
 fadeEnabled = chkFade.checked;
+updateBoxTransitions();
 const { l0, r0, k0 } = getInputs();
 renderTextInBox(format_left_split(l0), boxL0);
 renderTextInBox(format_right_split(r0), boxR0);

@@ -464,61 +464,36 @@ h1 {
 .arrow-l0-xor {
     left: 44px;
     top: 60.5px;
-    transform: rotate(90deg) scaleX(0.58);
+    transform: rotate(90deg) scaleX(0.58) scaleY(0.5);
 }
 .arrow-r0-f {
     left: 404px;
     top: 58px;
-    transform: rotate(90deg) scaleX(0.55);
+    transform: rotate(90deg) scaleX(0.55) scaleY(0.5);
 }
 .arrow-key-f {
     left: 444px;
     top: 119.5px;
-    transform: rotate(180deg) scaleX(0.2);
+    transform: rotate(180deg) scaleX(0.2) scaleY(0.5);
 }
 .arrow-f-xor {
     left: 219px;
     top: 119.5px;
-    transform: rotate(180deg) scaleX(2.1);
+    transform: rotate(180deg) scaleX(2.1) scaleY(0.5);
 }
 .arrow-xor-r1 {
     left: 120px;
     top: 175px;
     width: 360px;
     height: 108px;
-    transform: scaleX(-1);
+    transform: scaleX(-1) scaleY(0.5);
 }
 .arrow-r0-l1 {
     left: 120px;
     top: 100px;
     width: 360px;
     height: 183px;
-    transform: none;
-}
-
-/* Feistel Animation States Opacities */
-.feistel-layout.state-feistel-start .arrow-l0-xor,
-.feistel-layout.state-feistel-start .arrow-r0-f,
-.feistel-layout.state-feistel-start .arrow-key-f,
-.feistel-layout.state-feistel-start .arrow-r0-l1 {
-    opacity: 1;
-}
-
-.feistel-layout.state-feistel-middle .arrow-l0-xor,
-.feistel-layout.state-feistel-middle .arrow-r0-f,
-.feistel-layout.state-feistel-middle .arrow-key-f,
-.feistel-layout.state-feistel-middle .arrow-r0-l1,
-.feistel-layout.state-feistel-middle .arrow-f-xor {
-    opacity: 1;
-}
-
-.feistel-layout.state-feistel-active .arrow-l0-xor,
-.feistel-layout.state-feistel-active .arrow-r0-f,
-.feistel-layout.state-feistel-active .arrow-key-f,
-.feistel-layout.state-feistel-active .arrow-r0-l1,
-.feistel-layout.state-feistel-active .arrow-f-xor,
-.feistel-layout.state-feistel-active .arrow-xor-r1 {
-    opacity: 1;
+    transform: scaleY(0.5);
 }
 
 /* Sidebar Layout for XOR Calculator */

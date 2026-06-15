@@ -12,6 +12,7 @@ const mathInputBin = document.getElementById('math-input-bin');
 const mathInputHex = document.getElementById('math-input-hex');
 const mathKeyBin = document.getElementById('math-key-bin');
 const mathKeyHex = document.getElementById('math-key-hex');
+const mathKeyLabel = document.getElementById('math-key-label');
 const mathOutputBin = document.getElementById('math-output-bin');
 const mathOutputHex = document.getElementById('math-output-hex');
 
@@ -23,6 +24,8 @@ const btnLoop = document.getElementById('btn-loop');
 const btnPause = document.getElementById('btn-pause');
 const rangeSpeed = document.getElementById('speed-input');
 const valSpeed = document.getElementById('speed-val');
+const selectAlgo = document.getElementById('algo-select');
+const explanationPanel = document.getElementById('explanation-panel');
 
 // State Variables
 let animationSpeed = 1.0;
@@ -119,57 +122,76 @@ function bytesToVal(bytes) {
     return (bytes[0] << 8) | bytes[1];
 }
 
-// Calculate AES-CTR values
-async function getAESValues() {
+// Calculate Crypto values (XOR or AES-CTR)
+async function getCryptoValues() {
     const plainHex = txtPlaintext.value.padStart(4, '0');
     const keyHex = txtKey.value.padStart(4, '0');
     
     const plainBytes = hexToBytes(plainHex);
     const keyBytes = hexToBytes(keyHex);
     
-    // Hash key to 256-bit (32 bytes)
-    const keyHash = await crypto.subtle.digest('SHA-256', keyBytes);
+    const algo = selectAlgo.value;
     
-    const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        keyHash,
-        { name: 'AES-CTR' },
-        false,
-        ['encrypt', 'decrypt']
-    );
-    
-    const counter = new Uint8Array(16); // All-zero counter block
-    
-    // Encrypt plaintext to get ciphertext
-    const cipherBuffer = await crypto.subtle.encrypt(
-        { name: 'AES-CTR', counter, length: 64 },
-        cryptoKey,
-        plainBytes
-    );
-    const cipherBytes = new Uint8Array(cipherBuffer);
-    
-    // Encrypt all-zeros to get Keystream (for display)
-    const zeroBytes = new Uint8Array(plainBytes.length);
-    const keystreamBuffer = await crypto.subtle.encrypt(
-        { name: 'AES-CTR', counter, length: 64 },
-        cryptoKey,
-        zeroBytes
-    );
-    const keystreamBytes = new Uint8Array(keystreamBuffer);
-    
-    const plainVal = bytesToVal(plainBytes);
-    const keyVal = bytesToVal(keystreamBytes); // Use keystream as "key" visually
-    const cipherVal = bytesToVal(cipherBytes);
-    
-    return {
-        plainVal,
-        keyVal,
-        cipherVal,
-        cipherHex: bytesToHex(cipherBytes)
-    };
+    if (algo === 'xor') {
+        const plainVal = bytesToVal(plainBytes);
+        const keyVal = bytesToVal(keyBytes);
+        const cipherVal = plainVal ^ keyVal;
+        
+        const cipherBytes = new Uint8Array([
+            (cipherVal >> 8) & 0xFF,
+            cipherVal & 0xFF
+        ]);
+        
+        return {
+            plainVal,
+            keyVal, // Direct key
+            cipherVal,
+            cipherHex: bytesToHex(cipherBytes)
+        };
+    } else {
+        // Hash key to 256-bit (32 bytes)
+        const keyHash = await crypto.subtle.digest('SHA-256', keyBytes);
+        
+        const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            keyHash,
+            { name: 'AES-CTR' },
+            false,
+            ['encrypt', 'decrypt']
+        );
+        
+        const counter = new Uint8Array(16); // All-zero counter block
+        
+        // Encrypt plaintext to get ciphertext
+        const cipherBuffer = await crypto.subtle.encrypt(
+            { name: 'AES-CTR', counter, length: 64 },
+            cryptoKey,
+            plainBytes
+        );
+        const cipherBytes = new Uint8Array(cipherBuffer);
+        
+        // Encrypt all-zeros to get Keystream (for display)
+        const zeroBytes = new Uint8Array(plainBytes.length);
+        const keystreamBuffer = await crypto.subtle.encrypt(
+            { name: 'AES-CTR', counter, length: 64 },
+            cryptoKey,
+            zeroBytes
+        );
+        const keystreamBytes = new Uint8Array(keystreamBuffer);
+        
+        const plainVal = bytesToVal(plainBytes);
+        const keyVal = bytesToVal(keystreamBytes); // Use keystream as "key" visually
+        const cipherVal = bytesToVal(cipherBytes);
+        
+        return {
+            plainVal,
+            keyVal,
+            cipherVal,
+            cipherHex: bytesToHex(cipherBytes)
+        };
+    }
 }
 
-// Update Math Panel
 function updateMathPanel(inputVal, keyVal, outputVal, inputLabel = 'Input', outputLabel = 'Output') {
     mathInputBin.textContent = format_bin(inputVal);
     mathInputHex.textContent = `(${format_hex(inputVal)})`;
@@ -180,7 +202,14 @@ function updateMathPanel(inputVal, keyVal, outputVal, inputLabel = 'Input', outp
     mathOutputBin.textContent = format_bin(outputVal);
     mathOutputHex.textContent = `(${format_hex(outputVal)})`;
     
-    document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Keystream = ${outputLabel})`;
+    const algo = selectAlgo.value;
+    if (algo === 'aes') {
+        mathKeyLabel.textContent = 'Keystream:';
+        document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Keystream = ${outputLabel})`;
+    } else {
+        mathKeyLabel.textContent = 'Key:';
+        document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Key = ${outputLabel})`;
+    }
 }
 
 // Clear Math Panel
@@ -195,7 +224,7 @@ function clearMathPanel() {
 
 // Animation Steps
 async function runEncryptionCycle(onComplete) {
-    const { plainVal, keyVal, cipherVal } = await getAESValues();
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
     const t = (name) => BASE_TIMINGS[name] / animationSpeed;
 
     // Step 1: Idle state
@@ -238,7 +267,7 @@ async function runEncryptionCycle(onComplete) {
 }
 
 async function runDecryptionCycle(onComplete) {
-    const { plainVal, keyVal, cipherVal } = await getAESValues();
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
     const t = (name) => BASE_TIMINGS[name] / animationSpeed;
 
     activePhase = 'decrypt';
@@ -296,6 +325,16 @@ function runAutoLoop() {
     });
 }
 
+// Update initial visuals and math panel
+async function updateInitialVisuals() {
+    const { plainVal, keyVal, cipherVal } = await getCryptoValues();
+    renderTextInBox(format_hex(plainVal), leftBox);
+    renderTextInBox('', rightBox);
+    leftBoxContainer.style.opacity = '1';
+    rightBoxContainer.style.opacity = '0';
+    updateMathPanel(plainVal, keyVal, cipherVal, 'Plain', 'Cipher');
+}
+
 // Event Listeners
 btnEncrypt.addEventListener('click', () => {
     stopAnimation();
@@ -322,8 +361,6 @@ btnLoop.addEventListener('click', () => {
 rangeSpeed.addEventListener('input', (e) => {
     animationSpeed = parseFloat(e.target.value);
     valSpeed.textContent = animationSpeed.toFixed(1) + 'x';
-    // Update CSS transition durations dynamically if needed,
-    // but the JS timeouts will automatically scale on next step.
     document.querySelector('.key-svg').style.transitionDuration = `${0.5 / animationSpeed}s`;
     document.querySelector('.key-svg .bg-circle').style.transitionDuration = `${0.5 / animationSpeed}s`;
     document.querySelectorAll('.box-container').forEach(el => {
@@ -334,10 +371,26 @@ rangeSpeed.addEventListener('input', (e) => {
     });
 });
 
+selectAlgo.addEventListener('change', () => {
+    const algo = selectAlgo.value;
+    explanationPanel.style.display = algo === 'aes' ? 'block' : 'none';
+    if (activePhase === null) {
+        updateInitialVisuals();
+    }
+});
+
+txtPlaintext.addEventListener('input', () => {
+    if (activePhase === null) {
+        updateInitialVisuals();
+    }
+});
+
+txtKey.addEventListener('input', () => {
+    if (activePhase === null) {
+        updateInitialVisuals();
+    }
+});
+
 // Initialize
-const defaultPlainVal = 0xAAAA;
-renderTextInBox(format_hex(defaultPlainVal), leftBox);
-renderTextInBox('', rightBox);
-leftBoxContainer.style.opacity = '1';
-rightBoxContainer.style.opacity = '0';
-clearMathPanel();
+explanationPanel.style.display = selectAlgo.value === 'aes' ? 'block' : 'none';
+updateInitialVisuals();

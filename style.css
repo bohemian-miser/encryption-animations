@@ -197,6 +197,20 @@ h1 {
     color: #0066cc;
 }
 
+.explanation-panel {
+    margin-top: -15px;
+    margin-bottom: 25px;
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #555;
+    text-align: left;
+    padding: 10px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    background: #fafafa;
+    display: block;
+}
+
 /* Controls */
 .controls {
     display: flex;
@@ -216,14 +230,19 @@ h1 {
     width: 200px;
 }
 
-.control-group input[type="text"] {
+.control-group input[type="text"],
+.control-group select {
     padding: 8px;
     font-family: monospace;
     font-size: 1em;
     border: 1px solid #ccc;
     border-radius: 4px;
     width: 100px;
-    text-transform: uppercase;
+}
+
+.control-group select {
+    width: 220px;
+    background: #fff;
 }
 
 .control-group button {

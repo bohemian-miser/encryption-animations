@@ -19,7 +19,7 @@ This project features a wobbly, hand-drawn style step-by-step interactive simula
 
 ## Credits & Reference
 This simulator is inspired by and reverse-engineered from this excellent visual guide:
-- **Computerphile - The Feistel Cipher**: [Watch on YouTube](https://www.youtube.com/watch?v=8Tr2aj6JETg)
+- **Animated Padding Oracle Attack**: [Watch on YouTube](https://www.youtube.com/watch?v=8Tr2aj6JETg)
 
 ## License
 MIT

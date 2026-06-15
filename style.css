@@ -328,3 +328,192 @@ h1 {
 .asymmetric-layout .arrow-decrypt-out {
     transform: translateY(42.5px) rotate(220deg) scaleX(1.3);
 }
+
+/* Feistel Layout */
+.animation-space.feistel-layout {
+    height: 340px;
+    width: 600px;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+}
+.feistel-column {
+    width: 240px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+.box-container.small-box {
+    width: 240px;
+    height: 57px;
+    position: relative;
+}
+.box-label-top {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.box-label-bottom {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+/* XOR Gate */
+.xor-gate {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: bold;
+    background: #fff;
+    position: absolute;
+    left: 105px;
+    top: 145px;
+    z-index: 10;
+    transition: background-color 0.3s;
+}
+.xor-gate.active {
+    background-color: #ffeb3b; /* yellow pulse on active */
+}
+
+/* F Block */
+.f-block {
+    width: 50px;
+    height: 40px;
+    border: 2px solid #000;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    font-size: 1.2em;
+    position: absolute;
+    left: 95px;
+    top: 140px;
+    z-index: 10;
+    transition: background-color 0.3s;
+}
+.f-block.active {
+    background-color: #ffeb3b;
+}
+
+/* Key Node */
+.key-node {
+    width: 40px;
+    height: 40px;
+    border: 2px dashed #333;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 175px;
+    top: 140px;
+    z-index: 10;
+    font-family: monospace;
+    font-size: 0.8em;
+}
+.key-node-label {
+    font-size: 0.7em;
+    color: #777;
+}
+.key-node-value {
+    font-weight: bold;
+}
+
+/* Feistel Arrows Positioning */
+.feistel-arrows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.feistel-arrow {
+    position: absolute;
+    width: 152px;
+    height: 81px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Straight arrow overrides (using path drawing instead of complex SVG viewBox if possible,
+   but we reuse the same arrow structure, so we position and rotate/scale them) */
+.arrow-l0-xor {
+    left: 44px;
+    top: 60.5px;
+    transform: rotate(90deg) scaleX(0.58);
+}
+.arrow-r0-f {
+    left: 404px;
+    top: 58px;
+    transform: rotate(90deg) scaleX(0.55);
+}
+.arrow-key-f {
+    left: 444px;
+    top: 119.5px;
+    transform: rotate(180deg) scaleX(0.2);
+}
+.arrow-f-xor {
+    left: 219px;
+    top: 119.5px;
+    transform: rotate(180deg) scaleX(2.1);
+}
+.arrow-xor-r1 {
+    left: 224px;
+    top: 188.5px;
+    transform: rotate(16.7deg) scaleX(2.47);
+}
+.arrow-r0-l1 {
+    left: 224px;
+    top: 151px;
+    transform: rotate(153deg) scaleX(2.65);
+}
+
+/* Feistel Animation States Opacities */
+.feistel-layout.state-feistel-start .arrow-l0-xor,
+.feistel-layout.state-feistel-start .arrow-r0-f,
+.feistel-layout.state-feistel-start .arrow-key-f,
+.feistel-layout.state-feistel-start .arrow-r0-l1 {
+    opacity: 1;
+}
+
+.feistel-layout.state-feistel-middle .arrow-l0-xor,
+.feistel-layout.state-feistel-middle .arrow-r0-f,
+.feistel-layout.state-feistel-middle .arrow-key-f,
+.feistel-layout.state-feistel-middle .arrow-r0-l1,
+.feistel-layout.state-feistel-middle .arrow-f-xor {
+    opacity: 1;
+}
+
+.feistel-layout.state-feistel-active .arrow-l0-xor,
+.feistel-layout.state-feistel-active .arrow-r0-f,
+.feistel-layout.state-feistel-active .arrow-key-f,
+.feistel-layout.state-feistel-active .arrow-r0-l1,
+.feistel-layout.state-feistel-active .arrow-f-xor,
+.feistel-layout.state-feistel-active .arrow-xor-r1 {
+    opacity: 1;
+}
+

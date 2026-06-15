@@ -37,12 +37,18 @@ const btnLoop = document.getElementById('btn-loop');
 const btnPause = document.getElementById('btn-pause');
 const rangeSpeed = document.getElementById('speed-input');
 const valSpeed = document.getElementById('speed-val');
+const chkFade = document.getElementById('fade-toggle');
+const fBlockVal = document.getElementById('f-block-val');
+const calcA = document.getElementById('calc-a');
+const calcB = document.getElementById('calc-b');
+const calcResult = document.getElementById('calc-result');
 
 // State Variables
 let animationSpeed = 1.0;
 let loopActive = false;
 let currentTimeout = null;
 let activePhase = null; // 'encrypt' or 'decrypt' or null
+let fadeEnabled = true;
 
 // Base timings in ms (total 4000ms at 1x)
 const BASE_TIMINGS = {
@@ -190,8 +196,8 @@ function runEncryptionCycle(onComplete) {
     // Clear bottom boxes
     renderTextInBox('', boxL1);
     renderTextInBox('', boxR1);
-    l1Container.style.opacity = '0';
-    r1Container.style.opacity = '0';
+    l1Container.style.opacity = fadeEnabled ? '0' : '1';
+    r1Container.style.opacity = fadeEnabled ? '0' : '1';
     clearMathPanel();
 
     currentTimeout = setTimeout(() => {
@@ -203,6 +209,10 @@ function runEncryptionCycle(onComplete) {
             animSpace.classList.remove('state-feistel-start');
             animSpace.classList.add('state-feistel-middle');
             fBlock.classList.add('active');
+            
+            // Show intermediate value under F block
+            fBlockVal.textContent = format_hex8(fOut);
+            fBlockVal.classList.add('active');
 
             currentTimeout = setTimeout(() => {
                 // Step 4: Active (XOR active, crossover active, bottom boxes fade in)
@@ -215,9 +225,9 @@ function runEncryptionCycle(onComplete) {
                 l1Container.style.opacity = '1';
                 r1Container.style.opacity = '1';
                 
-                // Top boxes fade out
-                l0Container.style.opacity = '0';
-                r0Container.style.opacity = '0';
+                // Top boxes fade out if enabled
+                l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                r0Container.style.opacity = fadeEnabled ? '0' : '1';
 
                 updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
 
@@ -226,6 +236,8 @@ function runEncryptionCycle(onComplete) {
                     animSpace.classList.remove('state-feistel-active');
                     fBlock.classList.remove('active');
                     xorGate.classList.remove('active');
+                    fBlockVal.classList.remove('active');
+                    fBlockVal.textContent = '';
                     
                     currentTimeout = setTimeout(() => {
                         activePhase = null;
@@ -279,8 +291,8 @@ function runDecryptionCycle(onComplete) {
     // Clear bottom boxes
     renderTextInBox('', boxL1);
     renderTextInBox('', boxR1);
-    l1Container.style.opacity = '0';
-    r1Container.style.opacity = '0';
+    l1Container.style.opacity = fadeEnabled ? '0' : '1';
+    r1Container.style.opacity = fadeEnabled ? '0' : '1';
     clearMathPanel();
 
     currentTimeout = setTimeout(() => {
@@ -292,6 +304,10 @@ function runDecryptionCycle(onComplete) {
             animSpace.classList.remove('state-feistel-start');
             animSpace.classList.add('state-feistel-middle');
             fBlock.classList.add('active');
+            
+            // Show intermediate value under F block
+            fBlockVal.textContent = format_hex8(fOutDec);
+            fBlockVal.classList.add('active');
 
             currentTimeout = setTimeout(() => {
                 // Step 4: Active (Outputs are decL1 and decR1)
@@ -304,9 +320,9 @@ function runDecryptionCycle(onComplete) {
                 l1Container.style.opacity = '1';
                 r1Container.style.opacity = '1';
                 
-                // Top boxes fade out
-                l0Container.style.opacity = '0';
-                r0Container.style.opacity = '0';
+                // Top boxes fade out if enabled
+                l0Container.style.opacity = fadeEnabled ? '0' : '1';
+                r0Container.style.opacity = fadeEnabled ? '0' : '1';
 
                 // Display math for decryption
                 updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
@@ -316,6 +332,8 @@ function runDecryptionCycle(onComplete) {
                     animSpace.classList.remove('state-feistel-active');
                     fBlock.classList.remove('active');
                     xorGate.classList.remove('active');
+                    fBlockVal.classList.remove('active');
+                    fBlockVal.textContent = '';
                     
                     currentTimeout = setTimeout(() => {
                         activePhase = null;
@@ -332,10 +350,12 @@ function stopAnimation() {
     animSpace.className = 'animation-space feistel-layout';
     fBlock.classList.remove('active');
     xorGate.classList.remove('active');
+    fBlockVal.classList.remove('active');
+    fBlockVal.textContent = '';
     l0Container.style.opacity = '1';
     r0Container.style.opacity = '1';
-    l1Container.style.opacity = '1';
-    r1Container.style.opacity = '1';
+    l1Container.style.opacity = fadeEnabled ? '0' : '1';
+    r1Container.style.opacity = fadeEnabled ? '0' : '1';
     loopActive = false;
     btnLoop.textContent = 'Auto Loop';
     btnPause.style.display = 'none';
@@ -387,13 +407,50 @@ rangeSpeed.addEventListener('input', (e) => {
     });
 });
 
+// XOR Calculator Logic
+function runCalculator() {
+    let a = calcA.value.trim().toUpperCase().replace(/[^0-9A-F]/g, '');
+    let b = calcB.value.trim().toUpperCase().replace(/[^0-9A-F]/g, '');
+    
+    calcA.value = a;
+    calcB.value = b;
+    
+    const len = Math.max(a.length, b.length, 1);
+    const aPadded = a.padStart(len, '0');
+    const bPadded = b.padStart(len, '0');
+    
+    const valA = parseInt(aPadded, 16) || 0;
+    const valB = parseInt(bPadded, 16) || 0;
+    
+    const res = valA ^ valB;
+    const resHex = res.toString(16).toUpperCase().padStart(len, '0');
+    
+    calcResult.textContent = resHex;
+}
+
+// Fade Toggle Listener
+chkFade.addEventListener('change', () => {
+    fadeEnabled = chkFade.checked;
+    if (activePhase === null) {
+        // If not running, immediately reflect the fade setting on bottom boxes
+        l1Container.style.opacity = fadeEnabled ? '0' : '1';
+        r1Container.style.opacity = fadeEnabled ? '0' : '1';
+    }
+});
+
+// Calculator Listeners
+calcA.addEventListener('input', runCalculator);
+calcB.addEventListener('input', runCalculator);
+
 // Initialize
+fadeEnabled = chkFade.checked;
 const { l0, r0, k0 } = getInputs();
 renderTextInBox(format_left_split(l0), boxL0);
 renderTextInBox(format_right_split(r0), boxR0);
 keyNodeVal.textContent = format_hex8(k0);
 l0Container.style.opacity = '1';
 r0Container.style.opacity = '1';
-l1Container.style.opacity = '0';
-r1Container.style.opacity = '0';
+l1Container.style.opacity = fadeEnabled ? '0' : '1';
+r1Container.style.opacity = fadeEnabled ? '0' : '1';
 clearMathPanel();
+runCalculator();

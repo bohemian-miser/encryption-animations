@@ -251,7 +251,7 @@ h1 {
 
 /* Asymmetric Layout */
 .animation-space.asymmetric-layout {
-    height: 280px;
+    height: 340px;
 }
 .key-pair-container {
     display: flex;
@@ -317,14 +317,14 @@ h1 {
     height: 100%;
 }
 .asymmetric-layout .arrow-encrypt-in {
-    transform: translateY(-32.5px) rotate(-33deg) scaleX(1.2);
+    transform: translateY(-42.5px) rotate(-40deg) scaleX(1.3);
 }
 .asymmetric-layout .arrow-encrypt-out {
-    transform: translateY(-32.5px) rotate(33deg) scaleX(1.2);
+    transform: translateY(-42.5px) rotate(40deg) scaleX(1.3);
 }
 .asymmetric-layout .arrow-decrypt-in {
-    transform: translateY(32.5px) rotate(213deg) scaleX(1.2);
+    transform: translateY(42.5px) rotate(140deg) scaleX(1.3);
 }
 .asymmetric-layout .arrow-decrypt-out {
-    transform: translateY(32.5px) rotate(147deg) scaleX(1.2);
+    transform: translateY(42.5px) rotate(220deg) scaleX(1.3);
 }

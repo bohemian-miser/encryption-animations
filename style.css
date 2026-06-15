@@ -281,6 +281,14 @@ h1 {
     margin-top: 5px;
 }
 
+/* Static Rotations for Asymmetric Keys */
+.key-container.public {
+    transform: rotate(90deg);
+}
+.key-container.private {
+    transform: rotate(-90deg);
+}
+
 /* Permanent Key Colors for Asymmetric */
 .key-container.public .key-svg .bg-circle {
     fill: url(#encrypt-gradient) !important;
@@ -309,18 +317,14 @@ h1 {
     height: 100%;
 }
 .asymmetric-layout .arrow-encrypt-in {
-    transform-origin: left center;
-    transform: rotate(-33deg) scaleX(1.2);
+    transform: translateY(-32.5px) rotate(-33deg) scaleX(1.2);
 }
 .asymmetric-layout .arrow-encrypt-out {
-    transform-origin: right center;
-    transform: rotate(33deg) scaleX(1.2);
+    transform: translateY(-32.5px) rotate(33deg) scaleX(1.2);
 }
 .asymmetric-layout .arrow-decrypt-in {
-    transform-origin: right center;
-    transform: scaleX(-1.2) rotate(-33deg);
+    transform: translateY(32.5px) rotate(213deg) scaleX(1.2);
 }
 .asymmetric-layout .arrow-decrypt-out {
-    transform-origin: left center;
-    transform: scaleX(-1.2) rotate(33deg);
+    transform: translateY(32.5px) rotate(147deg) scaleX(1.2);
 }

@@ -2,6 +2,8 @@
 
 An interactive, visual demonstration of cryptographic algorithms in the browser.
 
+[**Try the Live Demos on GitHub Pages!**](https://bohemian-miser.github.io/encryption-animations/)
+
 ## Feistel Round Animation
 This project features a wobbly, hand-drawn style step-by-step interactive simulator of a single round in a Feistel cipher.
 

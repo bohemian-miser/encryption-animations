@@ -135,7 +135,7 @@ function updateMathPanel(inputVal, keyVal, outputVal, inputLabel = 'Input', outp
     mathOutputBin.textContent = format_bin(outputVal);
     mathOutputHex.textContent = `(${format_hex(outputVal)})`;
     
-    document.querySelector('#math-panel h3').textContent = `XOR Step-by-Step (${inputLabel} XOR Key = ${outputLabel})`;
+    document.querySelector('#math-panel h3').textContent = `Symmetric Encryption Process (${inputLabel} XOR Key = ${outputLabel})`;
 }
 
 // Clear Math Panel

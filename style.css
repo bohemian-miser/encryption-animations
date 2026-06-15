@@ -51,10 +51,8 @@ h1 {
 }
 
 .box-outline {
-    fill: none;
-    stroke: #000;
-    stroke-width: 3px;
-    stroke-miterlimit: 10;
+    fill: #000;
+    stroke: none;
 }
 
 .connector-container {

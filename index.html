@@ -128,8 +128,8 @@
 
         <!-- Keystream Explanation Footer -->
         <div class="explanation-panel" id="explanation-panel">
-            <strong>What is a Keystream?</strong><br>
-            In AES-CTR (Counter) mode, the block cipher encrypts an incrementing counter block using the Key to generate a stream of pseudo-random bytes called the <em>Keystream</em>. This Keystream is then XOR'd with the Plaintext to produce the Ciphertext.
+            <strong>What is AES ECB Mode?</strong><br>
+            In AES Electronic Codebook (ECB) mode, the block cipher encrypts the 128-bit block of Plaintext directly using the Key to produce the Ciphertext. No keystream is generated, and no final XOR is performed; the block cipher handles all diffusion and substitution inside its rounds.
         </div>
 
         <!-- Controls -->
@@ -138,16 +138,16 @@
                 <label for="algo-select">Algorithm:</label>
                 <select id="algo-select">
                     <option value="xor">Plain XOR (Direct)</option>
-                    <option value="aes" selected>AES-CTR (Keystream)</option>
+                    <option value="aes" selected>AES-128 Block (ECB)</option>
                 </select>
             </div>
             <div class="control-group">
-                <label for="plaintext-input">Plaintext (Hex, 4 chars):</label>
-                <input type="text" id="plaintext-input" value="AAAA" maxlength="4" pattern="[0-9a-fA-F]{4}">
+                <label for="plaintext-input">Plaintext (Hex, 16 bytes):</label>
+                <input type="text" id="plaintext-input" value="00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF" maxlength="47" pattern="[0-9a-fA-F\s]{32,47}">
             </div>
             <div class="control-group">
-                <label for="key-input">Key (Hex, 4 chars):</label>
-                <input type="text" id="key-input" value="6A95" maxlength="4" pattern="[0-9a-fA-F]{4}">
+                <label for="key-input">Key (Hex, 16 bytes):</label>
+                <input type="text" id="key-input" value="00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F" maxlength="47" pattern="[0-9a-fA-F\s]{32,47}">
             </div>
             <div class="control-group">
                 <button id="btn-encrypt">Run Encryption</button>

@@ -1,0 +1,258 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    max-width: 900px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.animation-space {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 250px;
+    margin-bottom: 30px;
+    border: 1px dashed #ccc;
+    padding: 20px;
+    background-color: #fafafa;
+    position: relative;
+}
+
+.box-container {
+    width: 200px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.box-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.box-outline {
+    fill: none;
+    stroke: #000;
+    stroke-width: 3px;
+    stroke-miterlimit: 10;
+}
+
+.connector-container {
+    width: 100px;
+    height: 80px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.arrow-svg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.arrow-svg path {
+    fill: #000;
+}
+
+.flip-h {
+    transform: scaleX(-1);
+}
+
+.key-container {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.key-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Key SVG Internal Styles */
+.key-svg .bg-circle {
+    transition: fill 0.5s ease-in-out;
+}
+
+.key-container.neutral .bg-circle {
+    fill: #7f7f7f;
+}
+
+.key-container.encrypting .bg-circle {
+    fill: url(#encrypt-gradient);
+}
+
+.key-container.decrypting .bg-circle {
+    fill: url(#decrypt-gradient);
+}
+
+.key-svg .cls-2 { fill: #e6e7e8; }
+.key-svg .cls-3 { fill: #535454; }
+.key-svg .cls-4, .key-svg .cls-5, .key-svg .cls-6, .key-svg .cls-7, .key-svg .cls-8 { fill: none; }
+.key-svg .cls-4, .key-svg .cls-5, .key-svg .cls-6 { stroke: #231f20; }
+.key-svg .cls-4, .key-svg .cls-5, .key-svg .cls-6, .key-svg .cls-7 { stroke-linecap: round; }
+.key-svg .cls-4, .key-svg .cls-5, .key-svg .cls-6, .key-svg .cls-8 { stroke-miterlimit: 10; }
+.key-svg .cls-4 { stroke-width: 11px; } /* encryption outer stroke? wait, key.svg didn't have cls-4 stroke width 11, key_encrypt did. We can keep it or merge */
+.key-svg .cls-5 { stroke-width: 6px; }
+.key-svg .cls-6, .key-svg .cls-7 { stroke-width: 7px; }
+.key-svg .cls-7 { stroke: #000; }
+.key-svg .cls-8 { stroke: #515151; }
+
+.key-svg {
+    transform-origin: center;
+    transition: transform 0.5s ease-in-out;
+}
+
+.key-container.encrypting .key-svg {
+    transform: rotate(90deg);
+}
+
+.key-container.decrypting .key-svg {
+    transform: rotate(-90deg);
+}
+
+/* Arrow Visibility States */
+.animation-space.state-encrypt-start .arrow-encrypt-in { opacity: 1; }
+.animation-space.state-encrypt-active .arrow-encrypt-in { opacity: 1; }
+.animation-space.state-encrypt-active .arrow-encrypt-out { opacity: 1; }
+
+.animation-space.state-decrypt-start .arrow-decrypt-in { opacity: 1; }
+.animation-space.state-decrypt-active .arrow-decrypt-in { opacity: 1; }
+.animation-space.state-decrypt-active .arrow-decrypt-out { opacity: 1; }
+
+/* Text Fade States */
+.box-svg .char-group {
+    transition: opacity 0.5s ease-in-out;
+}
+.box-svg.fade-out .char-group {
+    opacity: 0;
+}
+
+/* Math Panel */
+.math-panel {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 30px;
+}
+
+.math-panel h3 {
+    margin-top: 0;
+    color: #444;
+}
+
+.binary-row {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 1.1em;
+}
+
+.binary-row .label {
+    width: 80px;
+    font-weight: bold;
+    color: #666;
+}
+
+.binary-row .value {
+    font-family: monospace;
+    letter-spacing: 1px;
+    flex-grow: 1;
+}
+
+.binary-row .hex {
+    color: #888;
+    margin-left: 10px;
+}
+
+.divider {
+    height: 1px;
+    background-color: #ddd;
+    margin: 10px 0;
+}
+
+.output-row {
+    font-weight: bold;
+    color: #0066cc;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.control-group label {
+    font-weight: bold;
+    color: #555;
+    width: 200px;
+}
+
+.control-group input[type="text"] {
+    padding: 8px;
+    font-family: monospace;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100px;
+    text-transform: uppercase;
+}
+
+.control-group button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.control-group button:hover {
+    background-color: #0056b3;
+}
+
+.control-group button:active {
+    background-color: #004085;
+}
+
+.control-group input[type="range"] {
+    flex-grow: 1;
+}

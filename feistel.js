@@ -63,6 +63,15 @@ function format_hex16(val) {
     return val.toString(16).toUpperCase().padStart(4, '0');
 }
 
+// Split format helpers
+function format_left_split(val_8bit) {
+    return format_hex8(val_8bit) + '__';
+}
+
+function format_right_split(val_8bit) {
+    return '__' + format_hex8(val_8bit);
+}
+
 // Render text in small SVG box (width 240)
 function renderTextInBox(text, boxSvgElement) {
     const boxPathGroup = boxSvgElement.querySelector('g') || boxSvgElement.querySelector('#box-path');
@@ -119,44 +128,45 @@ function getInputs() {
     const l0 = (val16 >> 8) & 0xFF;
     const r0 = val16 & 0xFF;
 
-    const keyHex = txtKey.value.replace(/\s+/g, '').padStart(2, '0');
-    const key = parseInt(keyHex, 16) || 0;
+    const keyHex = txtKey.value.replace(/\s+/g, '').padStart(4, '0');
+    const keyVal16 = parseInt(keyHex, 16) || 0;
+    const k0 = (keyVal16 >> 8) & 0xFF;
 
-    return { l0, r0, key, val16 };
+    return { l0, r0, key: keyVal16, k0, val16 };
 }
 
 function clearMathPanel() {
-    mathL0Val.textContent = '00';
-    mathR0Val.textContent = '00';
+    mathL0Val.textContent = '00__';
+    mathR0Val.textContent = '__00';
     mathR0Expr.textContent = '00';
     mathK0Expr.textContent = '00';
     mathFVal.textContent = '00';
     mathL0Expr.textContent = '00';
     mathFExpr.textContent = '00';
-    mathR1Val.textContent = '00';
-    mathL1Val.textContent = '00';
+    mathR1Val.textContent = '__00';
+    mathL1Val.textContent = '00__';
     mathOutHex.textContent = '0000';
 }
 
-function updateMathPanel(l0, r0, key, fOut, r1, l1, finalOut) {
-    mathL0Val.textContent = format_hex8(l0);
-    mathR0Val.textContent = format_hex8(r0);
+function updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut) {
+    mathL0Val.textContent = format_left_split(l0);
+    mathR0Val.textContent = format_right_split(r0);
     mathR0Expr.textContent = format_hex8(r0);
-    mathK0Expr.textContent = format_hex8(key);
+    mathK0Expr.textContent = format_hex8(k0);
     mathFVal.textContent = format_hex8(fOut);
     mathL0Expr.textContent = format_hex8(l0);
     mathFExpr.textContent = format_hex8(fOut);
-    mathR1Val.textContent = format_hex8(r1);
-    mathL1Val.textContent = format_hex8(l1);
+    mathR1Val.textContent = format_right_split(r1);
+    mathL1Val.textContent = format_left_split(l1);
     mathOutHex.textContent = format_hex16(finalOut);
 }
 
 // Encryption Cycle
 function runEncryptionCycle(onComplete) {
-    const { l0, r0, key } = getInputs();
+    const { l0, r0, key, k0 } = getInputs();
     
     // Feistel Round 1 Math
-    const fOut = r0 ^ key;
+    const fOut = r0 ^ k0;
     const r1 = l0 ^ fOut;
     const l1 = r0;
     const finalOut = (l1 << 8) | r1;
@@ -169,11 +179,11 @@ function runEncryptionCycle(onComplete) {
     // Reset nodes
     fBlock.classList.remove('active');
     xorGate.classList.remove('active');
-    keyNodeVal.textContent = format_hex8(key);
+    keyNodeVal.textContent = format_hex8(k0);
 
     // Initial state: Top boxes visible with L0, R0
-    renderTextInBox(format_hex8(l0), boxL0);
-    renderTextInBox(format_hex8(r0), boxR0);
+    renderTextInBox(format_left_split(l0), boxL0);
+    renderTextInBox(format_right_split(r0), boxR0);
     l0Container.style.opacity = '1';
     r0Container.style.opacity = '1';
 
@@ -200,8 +210,8 @@ function runEncryptionCycle(onComplete) {
                 animSpace.classList.add('state-feistel-active');
                 xorGate.classList.add('active');
 
-                renderTextInBox(format_hex8(l1), boxL1);
-                renderTextInBox(format_hex8(r1), boxR1);
+                renderTextInBox(format_left_split(l1), boxL1);
+                renderTextInBox(format_right_split(r1), boxR1);
                 l1Container.style.opacity = '1';
                 r1Container.style.opacity = '1';
                 
@@ -209,7 +219,7 @@ function runEncryptionCycle(onComplete) {
                 l0Container.style.opacity = '0';
                 r0Container.style.opacity = '0';
 
-                updateMathPanel(l0, r0, key, fOut, r1, l1, finalOut);
+                updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut);
 
                 currentTimeout = setTimeout(() => {
                     // Reset arrows, keep bottom boxes
@@ -229,10 +239,10 @@ function runEncryptionCycle(onComplete) {
 
 // Decryption Cycle
 function runDecryptionCycle(onComplete) {
-    const { l0, r0, key } = getInputs();
+    const { l0, r0, key, k0 } = getInputs();
     
     // Ciphertext is the result of encryption
-    const fOutEnc = r0 ^ key;
+    const fOutEnc = r0 ^ k0;
     const r1 = l0 ^ fOutEnc;
     const l1 = r0;
     
@@ -242,8 +252,8 @@ function runDecryptionCycle(onComplete) {
     const decR0 = l1;
     
     // Math:
-    const fOutDec = decR0 ^ key; // L1 ^ key = R0 ^ key
-    const decR1 = decL0 ^ fOutDec; // R1 ^ (R0 ^ key) = (L0 ^ R0 ^ key) ^ R0 ^ key = L0
+    const fOutDec = decR0 ^ k0; // L1 ^ k0 = R0 ^ k0
+    const decR1 = decL0 ^ fOutDec; // R1 ^ (R0 ^ k0) = (L0 ^ R0 ^ k0) ^ R0 ^ k0 = L0
     const decL1 = decR0; // L1 = R0
     
     // Output swapped back is decL1, decR1 (which is L1, R1_dec = R0, L0)
@@ -258,11 +268,11 @@ function runDecryptionCycle(onComplete) {
     // Reset nodes
     fBlock.classList.remove('active');
     xorGate.classList.remove('active');
-    keyNodeVal.textContent = format_hex8(key);
+    keyNodeVal.textContent = format_hex8(k0);
 
     // Initial state: Top boxes loaded with swapped inputs (R1 on left, L1 on right)
-    renderTextInBox(format_hex8(decL0), boxL0);
-    renderTextInBox(format_hex8(decR0), boxR0);
+    renderTextInBox(format_left_split(decL0), boxL0);
+    renderTextInBox(format_right_split(decR0), boxR0);
     l0Container.style.opacity = '1';
     r0Container.style.opacity = '1';
 
@@ -289,8 +299,8 @@ function runDecryptionCycle(onComplete) {
                 animSpace.classList.add('state-feistel-active');
                 xorGate.classList.add('active');
 
-                renderTextInBox(format_hex8(decL1), boxL1);
-                renderTextInBox(format_hex8(decR1), boxR1);
+                renderTextInBox(format_left_split(decL1), boxL1);
+                renderTextInBox(format_right_split(decR1), boxR1);
                 l1Container.style.opacity = '1';
                 r1Container.style.opacity = '1';
                 
@@ -299,7 +309,7 @@ function runDecryptionCycle(onComplete) {
                 r0Container.style.opacity = '0';
 
                 // Display math for decryption
-                updateMathPanel(decL0, decR0, key, fOutDec, decR1, decL1, finalOut);
+                updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
 
                 currentTimeout = setTimeout(() => {
                     // Reset
@@ -378,9 +388,10 @@ rangeSpeed.addEventListener('input', (e) => {
 });
 
 // Initialize
-const { l0, r0 } = getInputs();
-renderTextInBox(format_hex8(l0), boxL0);
-renderTextInBox(format_hex8(r0), boxR0);
+const { l0, r0, k0 } = getInputs();
+renderTextInBox(format_left_split(l0), boxL0);
+renderTextInBox(format_right_split(r0), boxR0);
+keyNodeVal.textContent = format_hex8(k0);
 l0Container.style.opacity = '1';
 r0Container.style.opacity = '1';
 l1Container.style.opacity = '0';

@@ -482,14 +482,18 @@ h1 {
     transform: rotate(180deg) scaleX(2.1);
 }
 .arrow-xor-r1 {
-    left: 224px;
-    top: 188.5px;
-    transform: rotate(16.7deg) scaleX(2.47);
+    left: 120px;
+    top: 175px;
+    width: 360px;
+    height: 108px;
+    transform: scaleX(-1);
 }
 .arrow-r0-l1 {
-    left: 224px;
-    top: 151px;
-    transform: rotate(153deg) scaleX(2.65);
+    left: 120px;
+    top: 100px;
+    width: 360px;
+    height: 183px;
+    transform: none;
 }
 
 /* Feistel Animation States Opacities */

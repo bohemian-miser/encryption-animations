@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Symmetric Encryption Interactive Demo</title>
+    <title>Diffie-Hellman Key Exchange Interactive Demo</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,83 +17,75 @@
     </a>
 
     <div class="container">
-        <h1>Symmetric Encryption Animation</h1>
+        <h1>Diffie-Hellman Key Exchange</h1>
         
-        <div class="animation-space">
-            <svg id="diagram-svg" viewBox="0 0 800 250"></svg>
+        <div class="animation-space asymmetric-layout">
+            <svg id="diagram-svg" viewBox="0 0 800 340"></svg>
         </div>
 
-        <!-- XOR Math Visualization -->
+        <!-- DH Math Visualization -->
         <div class="math-panel" id="math-panel">
-            <h3>Symmetric Encryption Process</h3>
+            <h3>Diffie-Hellman Exchange Process</h3>
             <div class="binary-row">
                 <span class="label">Input:</span>
-                <span class="value" id="math-input-bin">00000000 00000000</span>
+                <span class="value" id="math-input-val">0</span>
                 <span class="hex" id="math-input-hex">(00 00)</span>
             </div>
             <div class="binary-row">
-                <span class="label" id="math-key-label">Keystream:</span>
-                <span class="value" id="math-key-bin">00000000 00000000</span>
-                <span class="hex" id="math-key-hex">(00 00)</span>
+                <span class="label">Operation:</span>
+                <span class="value" id="math-operation">g^a mod p</span>
             </div>
-            <div class="divider"></div>
-            <div class="binary-row output-row">
+            <div class="binary-row">
                 <span class="label">Output:</span>
-                <span class="value" id="math-output-bin">00000000 00000000</span>
+                <span class="value" id="math-output-val">0</span>
                 <span class="hex" id="math-output-hex">(00 00)</span>
             </div>
-        </div>
-
-        <!-- Keystream Explanation Footer -->
-        <div class="explanation-panel" id="explanation-panel">
-            <strong>What is a Keystream?</strong><br>
-            In AES-CTR (Counter) mode, the block cipher encrypts an incrementing counter block using the Key to generate a stream of pseudo-random bytes called the <em>Keystream</em>. This Keystream is then XOR'd with the Plaintext to produce the Ciphertext.
+            
+            <div class="transcript-box" id="transcript-box">
+                <div style="color: #888; font-style: italic;">Awaiting exchange start...</div>
+            </div>
+            
+            <div class="binary-row" style="margin-top: 10px; font-size: 0.9em; border-top: 1px dashed #ddd; padding-top: 10px;">
+                <span class="label" style="width: auto; margin-right: 10px;">Alice Private:</span>
+                <span class="value" style="color: #666;" id="alice-priv-lbl">a = 15</span>
+                <span class="label" style="width: auto; margin-left: 20px; margin-right: 10px;">Bob Private:</span>
+                <span class="value" style="color: #666;" id="bob-priv-lbl">b = 23</span>
+            </div>
         </div>
 
         <!-- Controls -->
         <div class="controls">
             <div class="control-group">
-                <label for="algo-select">Algorithm:</label>
-                <select id="algo-select">
-                    <option value="xor">Plain XOR (Direct)</option>
-                    <option value="aes" selected>AES-CTR (Keystream)</option>
-                </select>
+                <label for="alice-priv-input">Alice Private Key (a):</label>
+                <input type="text" id="alice-priv-input" value="15" maxlength="3">
+                <label for="bob-priv-input" style="margin-left: 20px;">Bob Private Key (b):</label>
+                <input type="text" id="bob-priv-input" value="23" maxlength="3">
             </div>
             <div class="control-group">
-                <label for="plaintext-input">Plaintext (Hex, 4 chars):</label>
-                <input type="text" id="plaintext-input" value="AAAA" maxlength="4" pattern="[0-9a-fA-F]{4}">
-            </div>
-            <div class="control-group">
-                <label for="key-input">Key (Hex, 4 chars):</label>
-                <input type="text" id="key-input" value="6A95" maxlength="4" pattern="[0-9a-fA-F]{4}">
-            </div>
-            <div class="control-group">
-                <button id="btn-encrypt">Run Encryption</button>
-                <button id="btn-decrypt">Run Decryption</button>
+                <button id="btn-exchange">Run Key Exchange</button>
                 <button id="btn-loop">Auto Loop</button>
-                <button id="btn-pause" style="display:none;">Pause</button>
+                <button id="btn-pause" style="display: none; background-color: #dc3545;">Pause</button>
             </div>
             <div class="control-group">
                 <label for="speed-input">Animation Speed:</label>
                 <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1">
-                <span id="speed-val">1x</span>
+                <span id="speed-val">1.0x</span>
             </div>
         </div>
+        
         <div class="page-switcher">
-            <a href="index.html" class="active">Symmetric (XOR/AES)</a>
+            <a href="index.html">Symmetric (XOR/AES)</a>
             <span class="divider">|</span>
             <a href="block.html">Block Ciphers (CBC)</a>
-            <span class="divider">|</span>
-            <a href="oracle.html">Padding Oracle</a>
             <span class="divider">|</span>
             <a href="feistel.html">Feistel Round</a>
             <span class="divider">|</span>
             <a href="asymmetric.html">Asymmetric (RSA)</a>
             <span class="divider">|</span>
-            <a href="dh.html">Key Exchange (DH)</a>
+            <a href="dh.html" class="active">Key Exchange (DH)</a>
         </div>
     </div>
 
-    <script type="module" src="main.js?v=2"></script>
+    <script type="module" src="dh.js?v=2"></script>
 </body>
 </html>

@@ -19,13 +19,14 @@ const valSpeed = document.getElementById('speed-val');
 // RSA Parameters
 const N_RSA = 64507n;
 const E_RSA = 17n;
-const D_RSA = 56473n;
+const D_RSA = 26353n;
 
 // State Variables
 let animationSpeed = 1.0;
 let loopActive = false;
 let currentSequence = null;
 let activePhase = null;
+let currentMode = 'encrypt';
 
 // Base timings in ms (corresponds to 1x speed, total 4000ms)
 const BASE_TIMINGS = {
@@ -71,30 +72,244 @@ function getPlainValue() {
     return val;
 }
 
+// Modular Exponentiation Steps Generator
+function getModularExponentiationSteps(base, exp, mod) {
+    const steps = [];
+    let res = 1n;
+    let currentBase = BigInt(base) % BigInt(mod);
+    let currentExp = BigInt(exp);
+    let nVal = BigInt(mod);
+    
+    let power = 0;
+    while (currentExp > 0n) {
+        const bit = currentExp % 2n;
+        const isOdd = bit === 1n;
+        
+        const stepInfo = {
+            power: power,
+            baseVal: Number(currentBase),
+            expVal: 2**power,
+            bit: Number(bit),
+            resBefore: Number(res),
+            resAfter: Number(res)
+        };
+        
+        if (isOdd) {
+            res = (res * currentBase) % nVal;
+            stepInfo.resAfter = Number(res);
+            stepInfo.multiplied = true;
+        } else {
+            stepInfo.multiplied = false;
+        }
+        
+        steps.push(stepInfo);
+        
+        currentBase = (currentBase * currentBase) % nVal;
+        currentExp = currentExp / 2n;
+        power++;
+    }
+    return steps;
+}
+
+// Transcript Setup
+function setupTranscript(inputVal, isEncrypt) {
+    const transcriptBox = document.getElementById('transcript-box');
+    if (!transcriptBox) return;
+
+    transcriptBox.innerHTML = '';
+
+    const opSymbol = isEncrypt ? 'e' : 'd';
+    const keyVal = isEncrypt ? E_RSA : D_RSA;
+    const outName = isEncrypt ? 'c' : 'm';
+    const inName = isEncrypt ? 'm' : 'c';
+    const finalVal = Number(powerMod(BigInt(inputVal), keyVal, N_RSA));
+    
+    // 1. Init line
+    const initDiv = document.createElement('div');
+    initDiv.className = 'transcript-line';
+    initDiv.id = 't-line-init';
+    initDiv.innerHTML = `<strong>Input ${inName}</strong> = ${inputVal} (Hex: ${format_hex(inputVal)}). Key (${opSymbol} = ${keyVal}, n = ${N_RSA})`;
+    transcriptBox.appendChild(initDiv);
+
+    // 2. Formula line
+    const formDiv = document.createElement('div');
+    formDiv.className = 'transcript-line';
+    formDiv.id = 't-line-formula';
+    formDiv.innerHTML = `Calculate <strong>${outName}</strong> = ${inName}<sup>${keyVal}</sup> mod ${N_RSA}`;
+    transcriptBox.appendChild(formDiv);
+
+    // Get exponent breakdown
+    let currentExp = BigInt(keyVal);
+    const activePowers = [];
+    let powerOf2 = 1;
+    while (currentExp > 0n) {
+        if (currentExp % 2n === 1n) {
+            activePowers.push(powerOf2);
+        }
+        powerOf2 *= 2;
+        currentExp = currentExp / 2n;
+    }
+    activePowers.reverse();
+    
+    // 3. Exponent breakdown line
+    const breakdownDiv = document.createElement('div');
+    breakdownDiv.className = 'transcript-line';
+    breakdownDiv.id = 't-line-breakdown';
+    breakdownDiv.innerHTML = `Exponent ${keyVal} = ${activePowers.join(' + ')}. We need: ${activePowers.map(p => `${inName}<sup>${p}</sup>`).join(', ')}`;
+    transcriptBox.appendChild(breakdownDiv);
+
+    // 4. Squaring steps
+    const steps = getModularExponentiationSteps(inputVal, keyVal, N_RSA);
+    steps.forEach((step, idx) => {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'transcript-line';
+        stepDiv.id = `t-line-step-${idx}`;
+        
+        let detail = '';
+        if (idx === 0) {
+            detail = `${inName}<sup>1</sup> = ${step.baseVal}`;
+        } else {
+            const prevExp = step.expVal / 2;
+            const prevVal = steps[idx - 1].baseVal;
+            const squareVal = (prevVal * prevVal) % Number(N_RSA);
+            detail = `${inName}<sup>${step.expVal}</sup> = (${inName}<sup>${prevExp}</sup>)<sup>2</sup> = ${prevVal}<sup>2</sup> &equiv; ${squareVal} mod ${N_RSA}`;
+        }
+        
+        const needed = activePowers.includes(step.expVal);
+        if (needed) {
+            detail += ` <strong style="color: #2e7d32;">(needed)</strong>`;
+        } else {
+            detail += ` <span style="color: #999;">(skip)</span>`;
+        }
+        
+        stepDiv.innerHTML = `&bull; ${detail}`;
+        transcriptBox.appendChild(stepDiv);
+    });
+
+    // 5. Accumulation steps
+    const multDiv = document.createElement('div');
+    multDiv.className = 'transcript-line';
+    multDiv.id = 't-line-mult';
+    
+    let multHTML = `Multiply needed terms: <strong>${outName}</strong> = `;
+    const termStrings = activePowers.map(p => `${inName}<sup>${p}</sup>`);
+    multHTML += termStrings.join(' &times; ') + ` mod ${N_RSA}<br>`;
+    
+    let accVal = 1n;
+    const nVal = BigInt(N_RSA);
+    const stepsHTML = [];
+    
+    let accCount = 0;
+    steps.forEach((step) => {
+        if (step.multiplied) {
+            if (accCount === 0) {
+                stepsHTML.push(`&bull; Start: ${step.baseVal}`);
+                accVal = BigInt(step.baseVal);
+            } else {
+                const nextVal = (accVal * BigInt(step.baseVal)) % nVal;
+                stepsHTML.push(`&bull; Multiply ${inName}<sup>${step.expVal}</sup>: ${accVal} &times; ${step.baseVal} &equiv; <strong>${nextVal}</strong> mod ${N_RSA}`);
+                accVal = nextVal;
+            }
+            accCount++;
+        }
+    });
+    
+    multHTML += stepsHTML.join('<br>');
+    multDiv.innerHTML = multHTML;
+    transcriptBox.appendChild(multDiv);
+
+    // 6. Final result
+    const finalDiv = document.createElement('div');
+    finalDiv.className = 'transcript-line';
+    finalDiv.id = 't-line-final';
+    finalDiv.innerHTML = `<strong>Result:</strong> ${outName} = ${finalVal} (Hex: ${format_hex(finalVal)})`;
+    transcriptBox.appendChild(finalDiv);
+}
+
+function clearTranscript() {
+    const transcriptBox = document.getElementById('transcript-box');
+    if (transcriptBox) {
+        transcriptBox.innerHTML = '<div style="color: #888; font-style: italic;">Awaiting animation start...</div>';
+    }
+}
+
+function highlightTranscriptLine(stepId) {
+    const lines = document.querySelectorAll('.transcript-line');
+    let foundActive = false;
+    lines.forEach(line => {
+        if (line.id === stepId) {
+            line.classList.add('active');
+            line.classList.remove('completed');
+            foundActive = true;
+            line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            line.classList.remove('active');
+            if (foundActive) {
+                line.classList.remove('completed');
+            } else {
+                line.classList.add('completed');
+            }
+        }
+    });
+}
+
 // Update Math Panel for Encryption
 function updateMathPanelEncrypt(plainVal, cipherVal) {
     mathInputVal.textContent = plainVal;
     mathInputHex.textContent = `(${format_hex(plainVal)})`;
-    mathOperation.textContent = `${plainVal} ^ 17 mod 64507`;
+    mathOperation.textContent = `${plainVal} ^ 17 mod 64507 = ${cipherVal}`;
     mathOutputVal.textContent = cipherVal;
     mathOutputHex.textContent = `(${format_hex(cipherVal)})`;
+    highlightTranscriptLine('t-line-final');
+}
+
+function updateMathPanelEncryptStep(plainVal, step, idx) {
+    mathInputVal.textContent = plainVal;
+    mathInputHex.textContent = `(${format_hex(plainVal)})`;
+    
+    if (step.multiplied) {
+        mathOperation.innerHTML = `Step ${idx+1}: Acc = (${step.resBefore} &times; ${step.baseVal}) mod ${N_RSA} &rarr; <strong>${step.resAfter}</strong>`;
+    } else {
+        mathOperation.innerHTML = `Step ${idx+1}: Acc = ${step.resBefore} (bit=0, skip &times; ${step.baseVal})`;
+    }
+    
+    mathOutputVal.textContent = '-';
+    mathOutputHex.textContent = '';
 }
 
 // Update Math Panel for Decryption
 function updateMathPanelDecrypt(cipherVal, plainVal) {
     mathInputVal.textContent = cipherVal;
     mathInputHex.textContent = `(${format_hex(cipherVal)})`;
-    mathOperation.textContent = `${cipherVal} ^ 56473 mod 64507`;
+    mathOperation.textContent = `${cipherVal} ^ 56473 mod 64507 = ${plainVal}`;
     mathOutputVal.textContent = plainVal;
     mathOutputHex.textContent = `(${format_hex(plainVal)})`;
+    highlightTranscriptLine('t-line-final');
 }
 
-function clearMathPanel() {
+function updateMathPanelDecryptStep(cipherVal, step, idx) {
+    mathInputVal.textContent = cipherVal;
+    mathInputHex.textContent = `(${format_hex(cipherVal)})`;
+    
+    if (step.multiplied) {
+        mathOperation.innerHTML = `Step ${idx+1}: Acc = (${step.resBefore} &times; ${step.baseVal}) mod ${N_RSA} &rarr; <strong>${step.resAfter}</strong>`;
+    } else {
+        mathOperation.innerHTML = `Step ${idx+1}: Acc = ${step.resBefore} (bit=0, skip &times; ${step.baseVal})`;
+    }
+    
+    mathOutputVal.textContent = '-';
+    mathOutputHex.textContent = '';
+}
+
+function clearMathPanel(shouldClearTranscript = true) {
     mathInputVal.textContent = '0';
     mathInputHex.textContent = '(00 00)';
     mathOperation.textContent = 'm^e mod n';
     mathOutputVal.textContent = '0';
     mathOutputHex.textContent = '(00 00)';
+    if (shouldClearTranscript) {
+        clearTranscript();
+    }
 }
 
 // Canvas Initialization
@@ -114,8 +329,11 @@ canvas.addArrow({ id: 'arrow-decrypt-out', from: 'key-private', to: 'plain', fro
 
 // Animation Steps
 async function runEncryptionCycle(onComplete) {
+    currentMode = 'encrypt';
     const plainVal = getPlainValue();
     const cipherVal = Number(powerMod(BigInt(plainVal), E_RSA, N_RSA));
+    
+    setupTranscript(plainVal, true);
     
     canvas.setMode('encrypt');
     canvas.reset();
@@ -133,7 +351,10 @@ async function runEncryptionCycle(onComplete) {
             { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 0 },
             { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 0 },
             { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 },
-            { type: 'custom', callback: clearMathPanel }
+            { type: 'custom', callback: () => {
+                clearMathPanel(false);
+                highlightTranscriptLine('t-line-init');
+            } }
         ]
     });
 
@@ -142,8 +363,26 @@ async function runEncryptionCycle(onComplete) {
         duration: BASE_TIMINGS.encryptStart,
         actions: [
             { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 1 },
-            { type: 'highlight', elementId: 'key-public', active: true }
+            { type: 'highlight', elementId: 'key-public', active: true },
+            { type: 'custom', callback: () => highlightTranscriptLine('t-line-formula') }
         ]
+    });
+
+    // Step 2.x: Modular Exponentiation Steps
+    const steps = getModularExponentiationSteps(plainVal, E_RSA, N_RSA);
+    steps.forEach((step, idx) => {
+        seq.addStep({
+            duration: Math.max(300, 1000 / animationSpeed),
+            actions: [
+                { type: 'custom', callback: () => {
+                    if (idx === 0) {
+                        highlightTranscriptLine('t-line-breakdown');
+                    }
+                    highlightTranscriptLine(`t-line-step-${idx}`);
+                    updateMathPanelEncryptStep(plainVal, step, idx);
+                }}
+            ]
+        });
     });
 
     // Step 3: Encrypt Active (Ciphertext appears, plaintext fades, arrow out appears)
@@ -154,7 +393,10 @@ async function runEncryptionCycle(onComplete) {
             { type: 'fade', elementId: 'cipher', opacity: 1 },
             { type: 'fade', elementId: 'plain', opacity: 0 },
             { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 1 },
-            { type: 'custom', callback: () => updateMathPanelEncrypt(plainVal, cipherVal) }
+            { type: 'custom', callback: () => {
+                highlightTranscriptLine('t-line-mult');
+                updateMathPanelEncrypt(plainVal, cipherVal);
+            }}
         ]
     });
 
@@ -176,8 +418,11 @@ async function runEncryptionCycle(onComplete) {
 }
 
 async function runDecryptionCycle(onComplete) {
+    currentMode = 'decrypt';
     const plainVal = getPlainValue();
     const cipherVal = Number(powerMod(BigInt(plainVal), E_RSA, N_RSA));
+    
+    setupTranscript(cipherVal, false);
     
     canvas.setMode('decrypt');
     canvas.reset();
@@ -194,7 +439,11 @@ async function runDecryptionCycle(onComplete) {
             { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 0 },
             { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 0 },
             { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 0 },
-            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 }
+            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 },
+            { type: 'custom', callback: () => {
+                clearMathPanel(false);
+                highlightTranscriptLine('t-line-init');
+            }}
         ]
     });
 
@@ -203,8 +452,26 @@ async function runDecryptionCycle(onComplete) {
         duration: BASE_TIMINGS.decryptStart,
         actions: [
             { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 1 },
-            { type: 'highlight', elementId: 'key-private', active: true }
+            { type: 'highlight', elementId: 'key-private', active: true },
+            { type: 'custom', callback: () => highlightTranscriptLine('t-line-formula') }
         ]
+    });
+
+    // Step 2.x: Decryption Exponentiation Steps
+    const steps = getModularExponentiationSteps(cipherVal, D_RSA, N_RSA);
+    steps.forEach((step, idx) => {
+        seq.addStep({
+            duration: Math.max(150, 400 / animationSpeed),
+            actions: [
+                { type: 'custom', callback: () => {
+                    if (idx === 0) {
+                        highlightTranscriptLine('t-line-breakdown');
+                    }
+                    highlightTranscriptLine(`t-line-step-${idx}`);
+                    updateMathPanelDecryptStep(cipherVal, step, idx);
+                }}
+            ]
+        });
     });
 
     // Step 3: Decrypt Active (Plaintext appears, ciphertext fades, left arrows appear)
@@ -215,7 +482,10 @@ async function runDecryptionCycle(onComplete) {
             { type: 'fade', elementId: 'plain', opacity: 1 },
             { type: 'fade', elementId: 'cipher', opacity: 0 },
             { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 1 },
-            { type: 'custom', callback: () => updateMathPanelDecrypt(cipherVal, plainVal) }
+            { type: 'custom', callback: () => {
+                highlightTranscriptLine('t-line-mult');
+                updateMathPanelDecrypt(cipherVal, plainVal);
+            }}
         ]
     });
 
@@ -240,16 +510,18 @@ function stopAnimation() {
     if (currentSequence) {
         currentSequence.stop();
     }
-    canvas.reset();
     loopActive = false;
     btnLoop.textContent = 'Auto Loop';
     btnPause.style.display = 'none';
+    updateInitialVisuals();
 }
 
 function runAutoLoop() {
     if (!loopActive) return;
+    currentMode = 'encrypt';
     runEncryptionCycle(() => {
         if (!loopActive) return;
+        currentMode = 'decrypt';
         runDecryptionCycle(() => {
             if (!loopActive) return;
             runAutoLoop();
@@ -259,26 +531,46 @@ function runAutoLoop() {
 
 async function updateInitialVisuals() {
     const plainVal = getPlainValue();
+    const cipherVal = Number(powerMod(BigInt(plainVal), E_RSA, N_RSA));
+    
     canvas.reset();
-    canvas.renderText('plain', format_hex(plainVal));
-    canvas.renderText('cipher', '');
-    canvas.setOpacity('plain', 1);
-    canvas.setOpacity('cipher', 0);
+    
+    if (currentMode === 'decrypt') {
+        canvas.setMode('decrypt');
+        canvas.renderText('cipher', format_hex(cipherVal));
+        canvas.renderText('plain', '');
+        canvas.setOpacity('cipher', 1);
+        canvas.setOpacity('plain', 0);
+        
+        updateMathPanelDecrypt(cipherVal, plainVal);
+        setupTranscript(cipherVal, false);
+    } else {
+        canvas.setMode('encrypt');
+        canvas.renderText('plain', format_hex(plainVal));
+        canvas.renderText('cipher', '');
+        canvas.setOpacity('plain', 1);
+        canvas.setOpacity('cipher', 0);
+        
+        updateMathPanelEncrypt(plainVal, cipherVal);
+        setupTranscript(plainVal, true);
+    }
+    
     canvas.setOpacity('arrow-encrypt-in', 0);
     canvas.setOpacity('arrow-encrypt-out', 0);
     canvas.setOpacity('arrow-decrypt-in', 0);
     canvas.setOpacity('arrow-decrypt-out', 0);
-    clearMathPanel();
 }
 
 // Event Listeners
 btnEncrypt.addEventListener('click', () => {
     stopAnimation();
+    currentMode = 'encrypt';
     runEncryptionCycle();
 });
 
 btnDecrypt.addEventListener('click', () => {
     stopAnimation();
+    currentMode = 'decrypt';
     runDecryptionCycle();
 });
 

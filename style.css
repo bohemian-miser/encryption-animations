@@ -737,3 +737,40 @@ h1 {
     stroke: #1565c0 !important;
 }
 
+/* Transcript Box for Asymmetric Encryption */
+.transcript-box {
+    margin-top: 15px;
+    padding: 10px 12px;
+    background-color: #ffffff;
+    color: #333333;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85em;
+    height: 160px;
+    overflow-y: auto;
+    line-height: 1.6;
+    border: 1px solid #dddddd;
+    text-align: left;
+}
+
+.transcript-line {
+    opacity: 0.5;
+    transition: opacity 0.2s, font-weight 0.2s, color 0.2s;
+    margin: 3px 0;
+}
+
+.transcript-line.active {
+    opacity: 1;
+    font-weight: bold;
+    color: #0056b3; /* deep blue highlight */
+    background-color: #e8f0fe; /* light blue background */
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+.transcript-line.completed {
+    opacity: 0.85;
+    color: #2e7d32; /* green for completed steps */
+}
+
+

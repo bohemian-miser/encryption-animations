@@ -48,44 +48,50 @@
             </div>
         </div>
 
-        <!-- Controls -->
-        <div class="controls">
-            <!-- Horizontally concatenated input fields -->
-            <div class="control-group input-controls-row" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <label for="plaintext-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Plaintext:</label>
-                    <input type="text" id="plaintext-input" value="AAAA" maxlength="4" style="width: 65px; height: 28px; padding: 4px; box-sizing: border-box;">
+        <!-- Controls Wrapper (2 Columns) -->
+        <div class="controls-wrapper" style="display: flex; gap: 30px; margin-top: 20px; align-items: flex-start; background: #fff; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+            <!-- Column 1: Main Controls -->
+            <div class="controls-main" style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                <div class="control-group input-controls-row" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="plaintext-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Plaintext:</label>
+                        <input type="text" id="plaintext-input" value="AAAA" maxlength="4" style="width: 65px; height: 28px; padding: 4px; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="key-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Key:</label>
+                        <input type="text" id="key-input" value="BB" maxlength="2" style="width: 45px; height: 28px; padding: 4px; box-sizing: border-box;">
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <label for="key-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Key:</label>
-                    <input type="text" id="key-input" value="BB" maxlength="2" style="width: 45px; height: 28px; padding: 4px; box-sizing: border-box;">
+                
+                <div class="control-group" style="margin: 0;">
+                    <label for="fade-toggle" style="display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; margin: 0;">
+                        <input type="checkbox" id="fade-toggle">
+                        Enable Fading
+                    </label>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <label style="width: auto; font-weight: bold; color: #555; margin: 0;">XOR Calc:</label>
-                    <input type="text" id="calc-a" value="AA" placeholder="A" maxlength="4" style="width: 45px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
-                    <span class="calc-op" style="font-weight: bold;">⊕</span>
-                    <input type="text" id="calc-b" value="BB" placeholder="B" maxlength="4" style="width: 45px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
-                    <span class="calc-op" style="font-weight: bold;">=</span>
-                    <span id="calc-result" class="calc-result-val" style="font-weight: bold; background: #eee; padding: 2px 8px; border-radius: 4px; min-width: 30px; text-align: center; border: 1px solid #ccc; height: 28px; line-height: 22px; box-sizing: border-box; font-family: monospace;">11</span>
+                <div class="control-group" style="margin: 0; display: flex; gap: 10px;">
+                    <button id="btn-encrypt">Run Encryption</button>
+                    <button id="btn-decrypt">Run Decryption</button>
+                    <button id="btn-loop">Auto Loop</button>
+                    <button id="btn-pause" style="display: none; background-color: #dc3545;">Pause</button>
+                </div>
+                <div class="control-group" style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <label for="speed-input" style="margin: 0; width: auto;">Speed:</label>
+                    <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1" style="margin: 0;">
+                    <span id="speed-val" style="font-family: monospace;">1.0x</span>
                 </div>
             </div>
-            
-            <div class="control-group">
-                <label for="fade-toggle" style="display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;">
-                    <input type="checkbox" id="fade-toggle">
-                    Enable Fading
-                </label>
-            </div>
-            <div class="control-group">
-                <button id="btn-encrypt">Run Encryption</button>
-                <button id="btn-decrypt">Run Decryption</button>
-                <button id="btn-loop">Auto Loop</button>
-                <button id="btn-pause" style="display: none; background-color: #dc3545;">Pause</button>
-            </div>
-            <div class="control-group">
-                <label for="speed-input">Animation Speed:</label>
-                <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1">
-                <span id="speed-val">1.0x</span>
+
+            <!-- Column 2: XOR Calculator Panel -->
+            <div class="calc-panel" style="width: 250px; padding: 15px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; box-sizing: border-box;">
+                <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: #333; font-family: monospace; font-weight: bold;">XOR Calculator</h3>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <input type="text" id="calc-a" value="AA" placeholder="A" maxlength="4" style="width: 50px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
+                    <span class="calc-op" style="font-weight: bold; font-family: monospace; color: #666;">⊕</span>
+                    <input type="text" id="calc-b" value="BB" placeholder="B" maxlength="4" style="width: 50px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
+                    <span class="calc-op" style="font-weight: bold; font-family: monospace; color: #666;">=</span>
+                    <span id="calc-result" class="calc-result-val" style="font-weight: bold; background: #eee; padding: 2px 6px; border-radius: 4px; min-width: 40px; text-align: center; border: 1px solid #ccc; height: 28px; line-height: 22px; box-sizing: border-box; font-family: monospace; display: inline-block;">11</span>
+                </div>
             </div>
         </div>
         
@@ -94,9 +100,13 @@
             <span class="divider">|</span>
             <a href="block.html">Block Ciphers (CBC)</a>
             <span class="divider">|</span>
+            <a href="oracle.html">Padding Oracle</a>
+            <span class="divider">|</span>
             <a href="feistel.html" class="active">Feistel Round</a>
             <span class="divider">|</span>
             <a href="asymmetric.html">Asymmetric (RSA)</a>
+            <span class="divider">|</span>
+            <a href="dh.html">Key Exchange (DH)</a>
         </div>
     </div>
 

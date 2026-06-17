@@ -73,6 +73,24 @@
             </div>
         </div>
         
+        <!-- DH Explanation Panel -->
+        <div class="explanation-panel" id="explanation-panel">
+            <strong>How Diffie-Hellman Key Exchange Works:</strong><br><br>
+            <strong>1. Public Parameters Setup:</strong><br>
+            &bull; Alice and Bob agree publicly on a prime modulus <em>p = 997</em> and a generator base <em>g = 2</em>.<br><br>
+            <strong>2. Private & Public Key Computation:</strong><br>
+            &bull; Alice chooses a secret private key <em>a</em> (e.g. <em>a = 15</em>) and computes public value <strong>A</strong>:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<em>A = g<sup>a</sup> mod p = 2<sup>15</sup> mod 997 = 864</em>.<br>
+            &bull; Bob chooses a secret private key <em>b</em> (e.g. <em>b = 23</em>) and computes public value <strong>B</strong>:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<em>B = g<sup>b</sup> mod p = 2<sup>23</sup> mod 997 = 303</em>.<br><br>
+            <strong>3. Public Exchange:</strong><br>
+            &bull; Alice sends <em>A (864)</em> to Bob, and Bob sends <em>B (303)</em> to Alice over the insecure channel.<br><br>
+            <strong>4. Calculating the Shared Secret:</strong><br>
+            &bull; Alice computes the shared secret <strong>S</strong> using Bob's public value: <em>S = B<sup>a</sup> mod p = 303<sup>15</sup> mod 997 = 387</em>.<br>
+            &bull; Bob computes the shared secret <strong>S</strong> using Alice's public value: <em>S = A<sup>b</sup> mod p = 864<sup>23</sup> mod 997 = 387</em>.<br>
+            &bull; Both parties arrive at the identical secret <strong>S = 387</strong> (hex `01 83`) without ever sending their private keys over the network!
+        </div>
+
         <div class="page-switcher">
             <a href="index.html">Symmetric (XOR/AES)</a>
             <span class="divider">|</span>

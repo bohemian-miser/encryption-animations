@@ -77,6 +77,22 @@
             </div>
         </div>
         
+        <!-- RSA Explanation Panel -->
+        <div class="explanation-panel" id="explanation-panel">
+            <strong>How Toy RSA Mathematics Works:</strong><br><br>
+            <strong>1. Key Generation Setup:</strong><br>
+            &bull; Choose prime numbers: <em>p = 251</em> and <em>q = 257</em>.<br>
+            &bull; Calculate modulus: <em>n = p &times; q = 64507</em> (Shared publicly. Caps message size).<br>
+            &bull; Calculate Carmichael totient: <em>&lambda;(n) = lcm(p-1, q-1) = lcm(250, 256) = 32000</em>.<br>
+            &bull; Choose public exponent: <em>e = 17</em> (coprime to 32000). <strong>Public Key: (e=17, n=64507)</strong>.<br>
+            &bull; Calculate private exponent: <em>d = e<sup>-1</sup> mod &lambda;(n) = 26353</em> (since 17 &times; 26353 &equiv; 1 mod 32000). <strong>Private Key: (d=26353, n=64507)</strong>.<br><br>
+            <strong>2. Cryptographic Steps:</strong><br>
+            &bull; <strong>Encryption:</strong> Ciphertext <em>c = m<sup>e</sup> mod n</em>. E.g. for plaintext <em>m = 43690</em>: <em>43690<sup>17</sup> mod 64507 = 47288</em>.<br>
+            &bull; <strong>Decryption:</strong> Plaintext <em>m = c<sup>d</sup> mod n</em>. E.g. for ciphertext <em>c = 47288</em>: <em>47288<sup>26353</sup> mod 64507 = 43690</em>.<br><br>
+            <strong>3. Binary Exponentiation (Repeated Squaring):</strong><br>
+            &bull; Computing <em>47288<sup>26353</sup></em> directly would produce a number with over 120,000 digits! To avoid integer overflow, the system writes the exponent as a sum of powers of 2 (e.g. 17 = 16 + 1). It squares the base modulo <em>n</em> at each step (e.g. <em>m<sup>2</sup> = (m<sup>1</sup>)<sup>2</sup> mod n</em>, <em>m<sup>4</sup> = (m<sup>2</sup>)<sup>2</sup> mod n</em>, etc.) and only multiplies the needed powers together, keeping numbers small.
+        </div>
+
         <div class="page-switcher">
             <a href="index.html">Symmetric (XOR/AES)</a>
             <span class="divider">|</span>

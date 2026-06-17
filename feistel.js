@@ -121,8 +121,8 @@ function setupDiagramLayout(mode) {
         canvas.addKey({ id: 'k0', x: 480, y: 170, type: 'hardware', showF: true });
         canvas.addBlock({ id: 'f-val', x: 320, y: 170, width: 80, height: 45, label: '', initialOpacity: 0 });
 
-        canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁ = R₀', isInput: true, initialOpacity: 0, className: 'block-cipher-mid' });
-        canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁ = L₀ ⊕ F(R₀,K₀)', isInput: true, initialOpacity: 0, className: 'block-cipher-mid' });
+        canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁ = R₀', isInput: false, initialOpacity: 0, className: 'block-cipher-mid' });
+        canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁ = L₀ ⊕ F(R₀,K₀)', isInput: false, initialOpacity: 0, className: 'block-cipher-mid' });
 
         // Add arrows
         canvas.addArrow({ id: 'arrow-r0-k0', from: 'r0', to: 'k0', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
@@ -133,7 +133,7 @@ function setupDiagramLayout(mode) {
         // Decrypt mode: inputs at bottom (Y=310), outputs at top (Y=30)
         canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁', isInput: true, className: 'block-cipher-mid' });
         canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁', isInput: true, className: 'block-cipher-mid' });
-        canvas.addXOR({ id: 'xor', x: 220, y: 240, initialOpacity: 0 });
+        canvas.addXOR({ id: 'xor', x: 400, y: 240, initialOpacity: 0 });
         canvas.addKey({ id: 'k0', x: 480, y: 170, type: 'hardware', showF: true });
         canvas.addBlock({ id: 'f-val', x: 320, y: 170, width: 80, height: 45, label: '', initialOpacity: 0 });
 
@@ -205,28 +205,42 @@ async function runEncryptionCycle(onComplete) {
 
     // Step 4: XOR fades in
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'fade', elementId: 'xor', opacity: 1 },
             { type: 'highlight', elementId: 'xor', active: true }
         ]
     });
 
-    // Step 5: Arrow-to-target fades in
+    // Step 5: Arrow-to-target fades in (f-val to r1)
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'fade', elementId: 'arrow-fval-r1', opacity: 1 }
         ]
     });
 
-    // Step 6: Target shows (R1 value, crossover R0 -> L1, and update math)
+    // Step 6: Target shows (R1 value)
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'showValue', elementId: 'r1', value: format_right_split(r1) },
-            { type: 'fade', elementId: 'r1', opacity: 1 },
-            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 1 },
+            { type: 'fade', elementId: 'r1', opacity: 1 }
+        ]
+    });
+
+    // Step 7: Crossover arrow to L1 fades in
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 5,
+        actions: [
+            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 1 }
+        ]
+    });
+
+    // Step 8: L1 target shows and final math update
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 5,
+        actions: [
             { type: 'showValue', elementId: 'l1', value: format_left_split(l1) },
             { type: 'fade', elementId: 'l1', opacity: 1 },
             ...(fadeEnabled ? [
@@ -237,7 +251,7 @@ async function runEncryptionCycle(onComplete) {
         ]
     });
 
-    // Step 7: End (Reset highlights and arrows if fade enabled)
+    // Step 9: End (Reset highlights and arrows if fade enabled)
     seq.addStep({
         duration: BASE_TIMINGS.end,
         actions: [
@@ -305,7 +319,7 @@ async function runDecryptionCycle(onComplete) {
         ]
     });
 
-    // Step 2: Start (decR0 to Key/F via arrow-l1-k0)
+    // Step 2: Start (L1 to Key/F via arrow-l1-k0)
     seq.addStep({
         duration: BASE_TIMINGS.start,
         actions: [
@@ -326,28 +340,42 @@ async function runDecryptionCycle(onComplete) {
 
     // Step 4: XOR fades in
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'fade', elementId: 'xor', opacity: 1 },
             { type: 'highlight', elementId: 'xor', active: true }
         ]
     });
 
-    // Step 5: Arrow-to-target fades in
+    // Step 5: Arrow-to-target fades in (f-val to l0)
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'fade', elementId: 'arrow-fval-l0', opacity: 1 }
         ]
     });
 
-    // Step 6: Target shows (L0 value in l0, crossover L1 -> R0 via arrow-l1-r0)
+    // Step 6: Target shows (L0 value in l0)
     seq.addStep({
-        duration: BASE_TIMINGS.active / 3,
+        duration: BASE_TIMINGS.active / 5,
         actions: [
             { type: 'showValue', elementId: 'l0', value: format_left_split(decR1) },
-            { type: 'fade', elementId: 'l0', opacity: 1 },
-            { type: 'fade', elementId: 'arrow-l1-r0', opacity: 1 },
+            { type: 'fade', elementId: 'l0', opacity: 1 }
+        ]
+    });
+
+    // Step 7: Crossover arrow to R0 fades in
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 5,
+        actions: [
+            { type: 'fade', elementId: 'arrow-l1-r0', opacity: 1 }
+        ]
+    });
+
+    // Step 8: R0 target shows and final math update
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 5,
+        actions: [
             { type: 'showValue', elementId: 'r0', value: format_right_split(decL1) },
             { type: 'fade', elementId: 'r0', opacity: 1 },
             ...(fadeEnabled ? [
@@ -358,7 +386,7 @@ async function runDecryptionCycle(onComplete) {
         ]
     });
 
-    // Step 7: End (Reset highlights and arrows if fade enabled)
+    // Step 9: End (Reset highlights and arrows if fade enabled)
     seq.addStep({
         duration: BASE_TIMINGS.end,
         actions: [
@@ -442,7 +470,9 @@ function showFullStaticDiagram() {
         // Arrows visible
         canvas.setOpacity('arrow-r0-k0', 1);
         canvas.setOpacity('arrow-k0-fval', 1);
-        canvas.setOpacity('arrow-fval-r1', 1);
+        canvas.setOpacity('arrow-l0-xor', 1);
+        canvas.setOpacity('arrow-fval-xor', 1);
+        canvas.setOpacity('arrow-xor-r1', 1);
         canvas.setOpacity('arrow-r0-l1', 1);
 
         updateMathPanel(l0, r0, k0, fOut, r1Val, l1Val, finalOut);
@@ -474,7 +504,9 @@ function showFullStaticDiagram() {
         // Arrows visible
         canvas.setOpacity('arrow-l1-k0', 1);
         canvas.setOpacity('arrow-k0-fval', 1);
-        canvas.setOpacity('arrow-fval-l0', 1);
+        canvas.setOpacity('arrow-r1-xor', 1);
+        canvas.setOpacity('arrow-fval-xor', 1);
+        canvas.setOpacity('arrow-xor-l0', 1);
         canvas.setOpacity('arrow-l1-r0', 1);
 
         updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
@@ -502,7 +534,9 @@ async function updateInitialVisuals() {
 
         canvas.setOpacity('arrow-r0-k0', 0);
         canvas.setOpacity('arrow-k0-fval', 0);
-        canvas.setOpacity('arrow-fval-r1', 0);
+        canvas.setOpacity('arrow-l0-xor', 0);
+        canvas.setOpacity('arrow-fval-xor', 0);
+        canvas.setOpacity('arrow-xor-r1', 0);
         canvas.setOpacity('arrow-r0-l1', 0);
     } else {
         const fOutEnc = r0 ^ k0;
@@ -522,7 +556,9 @@ async function updateInitialVisuals() {
 
         canvas.setOpacity('arrow-l1-k0', 0);
         canvas.setOpacity('arrow-k0-fval', 0);
-        canvas.setOpacity('arrow-fval-l0', 0);
+        canvas.setOpacity('arrow-r1-xor', 0);
+        canvas.setOpacity('arrow-fval-xor', 0);
+        canvas.setOpacity('arrow-xor-l0', 0);
         canvas.setOpacity('arrow-l1-r0', 0);
     }
     clearMathPanel();

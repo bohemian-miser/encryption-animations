@@ -1,15 +1,7 @@
 import HEX_PATHS from './hex_paths.js';
+import { EncryptionAnimCanvas, AnimationSequence } from './animation_library.js';
 
 // DOM Elements
-const animSpace = document.querySelector('.animation-space');
-const leftBox = document.getElementById('left-box');
-const rightBox = document.getElementById('right-box');
-const leftBoxContainer = document.getElementById('left-box-container');
-const rightBoxContainer = document.getElementById('right-box-container');
-
-const keyPublicSvg = document.querySelector('#key-public .key-svg');
-const keyPrivateSvg = document.querySelector('#key-private .key-svg');
-
 const mathInputVal = document.getElementById('math-input-val');
 const mathInputHex = document.getElementById('math-input-hex');
 const mathOperation = document.getElementById('math-operation');
@@ -32,8 +24,8 @@ const D_RSA = 56473n;
 // State Variables
 let animationSpeed = 1.0;
 let loopActive = false;
-let currentTimeout = null;
-let activePhase = null; // 'encrypt' or 'decrypt' or null
+let currentSequence = null;
+let activePhase = null;
 
 // Base timings in ms (corresponds to 1x speed, total 4000ms)
 const BASE_TIMINGS = {
@@ -67,53 +59,11 @@ function powerMod(base, exp, mod) {
     return res;
 }
 
-// Render text in SVG box
-function renderTextInBox(text, boxSvgElement) {
-    const boxPathGroup = boxSvgElement.querySelector('#box-path');
-    boxSvgElement.innerHTML = '';
-    if (boxPathGroup) {
-        boxSvgElement.appendChild(boxPathGroup);
-    }
-
-    const N = text.length;
-    const spacing = 65;
-    const charWidth = 60;
-    const totalWidth = (N - 1) * spacing + charWidth;
-    const startX = (475.19 - totalWidth) / 2;
-    const posY = 20;
-
-    for (let i = 0; i < N; i++) {
-        const char = text[i];
-        if (char === ' ') continue;
-
-        const paths = HEX_PATHS[char.toUpperCase()];
-        if (!paths) continue;
-
-        const x = startX + i * spacing;
-
-        const charGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        charGroup.setAttribute('class', 'char-group');
-        charGroup.setAttribute('transform', `translate(${x}, ${posY})`);
-        charGroup.style.transition = 'opacity 0.5s ease-in-out';
-        charGroup.style.opacity = '1';
-
-        paths.forEach(d => {
-            const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            pathEl.setAttribute('d', d);
-            pathEl.setAttribute('fill', '#000');
-            charGroup.appendChild(pathEl);
-        });
-
-        boxSvgElement.appendChild(charGroup);
-    }
-}
-
 // Get numeric value from input (clamped to max RSA plaintext)
 function getPlainValue() {
     const cleanHex = txtPlaintext.value.replace(/\s+/g, '').padStart(4, '0');
     let val = parseInt(cleanHex, 16) || 0;
     
-    // Clamp to max value supported by our n=64507 (0xFBF9)
     if (val >= Number(N_RSA)) {
         val = Number(N_RSA) - 1;
         txtPlaintext.value = val.toString(16).toUpperCase();
@@ -125,9 +75,7 @@ function getPlainValue() {
 function updateMathPanelEncrypt(plainVal, cipherVal) {
     mathInputVal.textContent = plainVal;
     mathInputHex.textContent = `(${format_hex(plainVal)})`;
-    
     mathOperation.textContent = `${plainVal} ^ 17 mod 64507`;
-    
     mathOutputVal.textContent = cipherVal;
     mathOutputHex.textContent = `(${format_hex(cipherVal)})`;
 }
@@ -136,9 +84,7 @@ function updateMathPanelEncrypt(plainVal, cipherVal) {
 function updateMathPanelDecrypt(cipherVal, plainVal) {
     mathInputVal.textContent = cipherVal;
     mathInputHex.textContent = `(${format_hex(cipherVal)})`;
-    
     mathOperation.textContent = `${cipherVal} ^ 56473 mod 64507`;
-    
     mathOutputVal.textContent = plainVal;
     mathOutputHex.textContent = `(${format_hex(plainVal)})`;
 }
@@ -151,105 +97,150 @@ function clearMathPanel() {
     mathOutputHex.textContent = '(00 00)';
 }
 
+// Canvas Initialization
+const canvas = new EncryptionAnimCanvas('#diagram-svg', { hexPaths: HEX_PATHS });
+
+// Add layout elements
+canvas.addBlock({ id: 'plain', x: 180, y: 170, width: 220, height: 60, label: 'Plaintext', isInput: true });
+canvas.addKey({ id: 'key-public', x: 400, y: 100, type: 'hardware', label: 'Public Key (e, n)', rotation: 90, className: 'public', size: 160 });
+canvas.addKey({ id: 'key-private', x: 400, y: 240, type: 'hardware', label: 'Private Key (d, n)', rotation: -90, className: 'private', size: 160 });
+canvas.addBlock({ id: 'cipher', x: 620, y: 170, width: 220, height: 60, label: 'Ciphertext', isInput: false, initialOpacity: 0 });
+
+// Add arrows
+canvas.addArrow({ id: 'arrow-encrypt-in', from: 'plain', to: 'key-public', fromAnchor: 'right', toAnchor: 'left', type: 'straight', initialOpacity: 0 });
+canvas.addArrow({ id: 'arrow-encrypt-out', from: 'key-public', to: 'cipher', fromAnchor: 'right', toAnchor: 'left', type: 'straight', initialOpacity: 0 });
+canvas.addArrow({ id: 'arrow-decrypt-in', from: 'cipher', to: 'key-private', fromAnchor: 'left', toAnchor: 'right', type: 'straight', initialOpacity: 0 });
+canvas.addArrow({ id: 'arrow-decrypt-out', from: 'key-private', to: 'plain', fromAnchor: 'left', toAnchor: 'right', type: 'straight', initialOpacity: 0 });
+
 // Animation Steps
-function runEncryptionCycle(onComplete) {
+async function runEncryptionCycle(onComplete) {
     const plainVal = getPlainValue();
-    // c = m^17 mod 64507
     const cipherVal = Number(powerMod(BigInt(plainVal), E_RSA, N_RSA));
     
-    const t = (name) => BASE_TIMINGS[name] / animationSpeed;
+    canvas.setMode('encrypt');
+    canvas.reset();
+
+    const seq = new AnimationSequence(canvas);
+
+    // Step 1: Idle
+    seq.addStep({
+        duration: BASE_TIMINGS.idle,
+        actions: [
+            { type: 'showValue', elementId: 'plain', value: format_hex(plainVal) },
+            { type: 'fade', elementId: 'plain', opacity: 1 },
+            { type: 'fade', elementId: 'cipher', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 },
+            { type: 'custom', callback: clearMathPanel }
+        ]
+    });
+
+    // Step 2: Encrypt Start (Arrows appear to public key, public key wiggles)
+    seq.addStep({
+        duration: BASE_TIMINGS.encryptStart,
+        actions: [
+            { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 1 },
+            { type: 'highlight', elementId: 'key-public', active: true }
+        ]
+    });
+
+    // Step 3: Encrypt Active (Ciphertext appears, plaintext fades, arrow out appears)
+    seq.addStep({
+        duration: BASE_TIMINGS.encryptActive,
+        actions: [
+            { type: 'showValue', elementId: 'cipher', value: format_hex(cipherVal) },
+            { type: 'fade', elementId: 'cipher', opacity: 1 },
+            { type: 'fade', elementId: 'plain', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 1 },
+            { type: 'custom', callback: () => updateMathPanelEncrypt(plainVal, cipherVal) }
+        ]
+    });
+
+    // Step 4: Encrypt End (Arrows disappear, public key stops)
+    seq.addStep({
+        duration: BASE_TIMINGS.encryptEnd,
+        actions: [
+            { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 0 },
+            { type: 'highlight', elementId: 'key-public', active: false }
+        ]
+    });
 
     activePhase = 'encrypt';
-    animSpace.className = 'animation-space asymmetric-layout';
-    
-    // Reset keys to idle
-    keyPublicSvg.classList.remove('active-key');
-    keyPrivateSvg.classList.remove('active-key');
-    
-    renderTextInBox(format_hex(plainVal), leftBox);
-    leftBoxContainer.style.opacity = '1';
-    
-    renderTextInBox('', rightBox);
-    rightBoxContainer.style.opacity = '0';
-    clearMathPanel();
-
-    currentTimeout = setTimeout(() => {
-        // Step 2: Encrypt Start (Arrows appear to public key, public key wiggles)
-        animSpace.classList.add('state-encrypt-start');
-        keyPublicSvg.classList.add('active-key');
-        
-        currentTimeout = setTimeout(() => {
-            // Step 3: Encrypt Active (Ciphertext appears, plaintext fades, arrows out)
-            animSpace.classList.add('state-encrypt-active');
-            renderTextInBox(format_hex(cipherVal), rightBox);
-            rightBoxContainer.style.opacity = '1';
-            leftBoxContainer.style.opacity = '0';
-            updateMathPanelEncrypt(plainVal, cipherVal);
-
-            currentTimeout = setTimeout(() => {
-                // Step 4: Encrypt End (Arrows disappear, public key stops wiggling)
-                animSpace.classList.remove('state-encrypt-start', 'state-encrypt-active');
-                keyPublicSvg.classList.remove('active-key');
-
-                currentTimeout = setTimeout(() => {
-                    activePhase = null;
-                    if (onComplete) onComplete();
-                }, t('encryptEnd'));
-            }, t('encryptActive'));
-        }, t('encryptStart'));
-    }, t('idle'));
+    currentSequence = seq;
+    await seq.play();
+    activePhase = null;
+    if (onComplete) onComplete();
 }
 
-function runDecryptionCycle(onComplete) {
+async function runDecryptionCycle(onComplete) {
     const plainVal = getPlainValue();
     const cipherVal = Number(powerMod(BigInt(plainVal), E_RSA, N_RSA));
-    const t = (name) => BASE_TIMINGS[name] / animationSpeed;
+    
+    canvas.setMode('decrypt');
+    canvas.reset();
+
+    const seq = new AnimationSequence(canvas);
+
+    // Step 1: Mid Idle
+    seq.addStep({
+        duration: BASE_TIMINGS.midIdle,
+        actions: [
+            { type: 'showValue', elementId: 'cipher', value: format_hex(cipherVal) },
+            { type: 'fade', elementId: 'cipher', opacity: 1 },
+            { type: 'fade', elementId: 'plain', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-encrypt-out', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 }
+        ]
+    });
+
+    // Step 2: Decrypt Start (Right arrows to private key, private key wiggles)
+    seq.addStep({
+        duration: BASE_TIMINGS.decryptStart,
+        actions: [
+            { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 1 },
+            { type: 'highlight', elementId: 'key-private', active: true }
+        ]
+    });
+
+    // Step 3: Decrypt Active (Plaintext appears, ciphertext fades, left arrows appear)
+    seq.addStep({
+        duration: BASE_TIMINGS.decryptActive,
+        actions: [
+            { type: 'showValue', elementId: 'plain', value: format_hex(plainVal) },
+            { type: 'fade', elementId: 'plain', opacity: 1 },
+            { type: 'fade', elementId: 'cipher', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 1 },
+            { type: 'custom', callback: () => updateMathPanelDecrypt(cipherVal, plainVal) }
+        ]
+    });
+
+    // Step 4: Decrypt End (Arrows disappear, private key stops)
+    seq.addStep({
+        duration: BASE_TIMINGS.decryptEnd,
+        actions: [
+            { type: 'fade', elementId: 'arrow-decrypt-in', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-decrypt-out', opacity: 0 },
+            { type: 'highlight', elementId: 'key-private', active: false }
+        ]
+    });
 
     activePhase = 'decrypt';
-    
-    // Reset keys to idle
-    keyPublicSvg.classList.remove('active-key');
-    keyPrivateSvg.classList.remove('active-key');
-
-    // Ensure right box has ciphertext, left box is hidden
-    renderTextInBox(format_hex(cipherVal), rightBox);
-    rightBoxContainer.style.opacity = '1';
-    leftBoxContainer.style.opacity = '0';
-
-    currentTimeout = setTimeout(() => {
-        // Step 2: Decrypt Start (Right arrows to private key, private key wiggles)
-        animSpace.classList.add('state-decrypt-start');
-        keyPrivateSvg.classList.add('active-key');
-
-        currentTimeout = setTimeout(() => {
-            // Step 3: Decrypt Active (Plaintext appears, ciphertext fades)
-            animSpace.classList.add('state-decrypt-active');
-            renderTextInBox(format_hex(plainVal), leftBox);
-            leftBoxContainer.style.opacity = '1';
-            rightBoxContainer.style.opacity = '0';
-            updateMathPanelDecrypt(cipherVal, plainVal);
-
-            currentTimeout = setTimeout(() => {
-                // Step 4: Decrypt End (Arrows disappear, private key stops)
-                animSpace.classList.remove('state-decrypt-start', 'state-decrypt-active');
-                keyPrivateSvg.classList.remove('active-key');
-
-                currentTimeout = setTimeout(() => {
-                    activePhase = null;
-                    if (onComplete) onComplete();
-                }, t('decryptEnd'));
-            }, t('decryptActive'));
-        }, t('decryptStart'));
-    }, t('midIdle'));
+    currentSequence = seq;
+    await seq.play();
+    activePhase = null;
+    if (onComplete) onComplete();
 }
 
 function stopAnimation() {
-    clearTimeout(currentTimeout);
-    animSpace.className = 'animation-space asymmetric-layout';
-    keyPublicSvg.classList.remove('active-key');
-    keyPrivateSvg.classList.remove('active-key');
-    leftBoxContainer.style.opacity = '1';
-    rightBoxContainer.style.opacity = '1';
+    if (currentSequence) {
+        currentSequence.stop();
+    }
+    canvas.reset();
     loopActive = false;
     btnLoop.textContent = 'Auto Loop';
     btnPause.style.display = 'none';
@@ -264,6 +255,20 @@ function runAutoLoop() {
             runAutoLoop();
         });
     });
+}
+
+async function updateInitialVisuals() {
+    const plainVal = getPlainValue();
+    canvas.reset();
+    canvas.renderText('plain', format_hex(plainVal));
+    canvas.renderText('cipher', '');
+    canvas.setOpacity('plain', 1);
+    canvas.setOpacity('cipher', 0);
+    canvas.setOpacity('arrow-encrypt-in', 0);
+    canvas.setOpacity('arrow-encrypt-out', 0);
+    canvas.setOpacity('arrow-decrypt-in', 0);
+    canvas.setOpacity('arrow-decrypt-out', 0);
+    clearMathPanel();
 }
 
 // Event Listeners
@@ -289,26 +294,22 @@ btnLoop.addEventListener('click', () => {
     }
 });
 
+btnPause.addEventListener('click', () => {
+    stopAnimation();
+});
+
 rangeSpeed.addEventListener('input', (e) => {
     animationSpeed = parseFloat(e.target.value);
     valSpeed.textContent = animationSpeed.toFixed(1) + 'x';
-    
-    // Update durations
-    document.querySelectorAll('.key-svg').forEach(el => {
-        el.style.transitionDuration = `${0.5 / animationSpeed}s`;
-    });
-    document.querySelectorAll('.box-container').forEach(el => {
-        el.style.transitionDuration = `${0.5 / animationSpeed}s`;
-    });
-    document.querySelectorAll('.arrow-svg').forEach(el => {
-        el.style.transitionDuration = `${0.3 / animationSpeed}s`;
-    });
+    canvas.setSpeed(animationSpeed);
+});
+
+txtPlaintext.addEventListener('input', () => {
+    if (activePhase === null) {
+        updateInitialVisuals();
+    }
 });
 
 // Initialize
-const defaultPlainVal = 0xAAAA; // Will be clamped to FBF9 in getPlainValue on run
-renderTextInBox(format_hex(getPlainValue()), leftBox);
-renderTextInBox('', rightBox);
-leftBoxContainer.style.opacity = '1';
-rightBoxContainer.style.opacity = '0';
-clearMathPanel();
+canvas.setSpeed(animationSpeed);
+updateInitialVisuals();

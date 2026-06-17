@@ -27,7 +27,7 @@
             stroke-width: 2px;
             transition: fill 0.3s;
         }
-        .xor-circle.active {
+        .active .xor-circle {
             fill: #ffeb3b;
         }
         .xor-text {
@@ -37,6 +37,18 @@
             text-anchor: middle;
             dominant-baseline: central;
             pointer-events: none;
+        }
+        .key-circle {
+            fill: #e0e0e0;
+            stroke: #151513;
+            stroke-width: 2px;
+            transition: fill 0.3s;
+        }
+        #diagram-svg.mode-encrypt .key-group.active .key-circle {
+            fill: #ff5252;
+        }
+        #diagram-svg.mode-decrypt .key-group.active .key-circle {
+            fill: #69f0ae;
         }
         .block-label {
             font-family: monospace;
@@ -131,6 +143,10 @@
                 <input type="text" id="plaintext-input" value="AAAABBBBCCCCDDDD" maxlength="16" style="width: 180px;">
             </div>
             <div class="control-group">
+                <label for="ciphertext-input">Ciphertext Input (Hex / 16 chars):</label>
+                <input type="text" id="ciphertext-input" value="09D05753282B21CD" maxlength="16" style="width: 180px;">
+            </div>
+            <div class="control-group">
                 <label for="key-input">Key (Hex, 4 chars):</label>
                 <input type="text" id="key-input" value="6A95" maxlength="4" style="width: 60px;">
             </div>
@@ -161,6 +177,6 @@
         </div>
     </div>
 
-    <script type="module" src="block.js"></script>
+    <script type="module" src="block.js?v=2"></script>
 </body>
 </html>

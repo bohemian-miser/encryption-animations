@@ -96,8 +96,14 @@ h1 {
     height: 100%;
 }
 
+.key-graphic-group {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.5s ease-in-out;
+}
+
 /* Key SVG Internal Styles */
-.key-svg .bg-circle {
+.bg-circle {
     transition: fill 0.5s ease-in-out;
 }
 
@@ -125,17 +131,38 @@ h1 {
 .key-svg .cls-7 { stroke: #000; }
 .key-svg .cls-8 { stroke: #515151; }
 
-.key-svg {
-    transform-origin: center;
-    transition: transform 0.5s ease-in-out;
+#diagram-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
-.key-container.encrypting .key-svg {
+.key-svg {
+    transition: fill 0.5s ease-in-out;
+    fill: #7f7f7f;
+}
+
+.asymmetric-layout #diagram-svg .key-group.active .key-svg {
+    animation: wiggle-pulse-anim 1.2s infinite ease-in-out;
+}
+
+/* Active state rules for keys globally */
+.canvas-symmetric.mode-encrypt .key-group.active .key-graphic-group,
+.canvas-cbc.mode-encrypt .key-group.active .key-graphic-group {
     transform: rotate(90deg);
 }
-
-.key-container.decrypting .key-svg {
+.canvas-symmetric.mode-decrypt .key-group.active .key-graphic-group,
+.canvas-cbc.mode-decrypt .key-group.active .key-graphic-group {
     transform: rotate(-90deg);
+}
+.canvas-feistel .key-group.active .key-graphic-group {
+    transform: rotate(-90deg);
+}
+.mode-encrypt .key-group.active .key-svg {
+    fill: url(#encrypt-gradient) !important;
+}
+.mode-decrypt .key-group.active .key-svg {
+    fill: url(#decrypt-gradient) !important;
 }
 
 /* Arrow Visibility States */
@@ -301,27 +328,22 @@ h1 {
 }
 
 /* Static Rotations for Asymmetric Keys */
-.key-container.public {
+.key-group.public .key-graphic-group {
     transform: rotate(90deg);
 }
-.key-container.private {
+.key-group.private .key-graphic-group {
     transform: rotate(-90deg);
 }
 
 /* Permanent Key Colors for Asymmetric */
-.key-container.public .key-svg .bg-circle {
+.key-group.public .key-svg {
     fill: url(#encrypt-gradient) !important;
-    opacity: 1 !important;
 }
-.key-container.private .key-svg .bg-circle {
+.key-group.private .key-svg {
     fill: url(#decrypt-gradient) !important;
-    opacity: 1 !important;
 }
 
-/* Wiggle & Pulse Animation for Active Key */
-.key-svg.active-key {
-    animation: wiggle-pulse-anim 1.2s infinite ease-in-out;
-}
+/* Key active animation is now global */
 
 @keyframes wiggle-pulse-anim {
     0% { transform: rotate(0deg) scale(1); }
@@ -666,12 +688,6 @@ h1 {
 }
 
 /* Block Cipher Page Specifics */
-.box-outline.input-block {
-    fill: #e8f5e9 !important;
-}
-.box-outline.output-block {
-    fill: #ffebee !important;
-}
 .block-rect {
     fill: #fff;
     stroke: #151513;
@@ -689,5 +705,22 @@ h1 {
 .arrow-path.active {
     stroke: #007bff;
     stroke-width: 3.5px;
+}
+.arrow-use {
+    color: #151513;
+    transition: color 0.3s ease-in-out;
+}
+.arrow-use.active {
+    color: #007bff;
+}
+
+/* Custom subtle colors for CBC plaintext & middle cipher blocks */
+.block-group.block-plain .box-outline {
+    fill: #f0faf0 !important;
+    stroke: #a2caa2 !important;
+}
+.block-group.block-cipher-mid .box-outline {
+    fill: #faf0f0 !important;
+    stroke: #caa2a2 !important;
 }
 

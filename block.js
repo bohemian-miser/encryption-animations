@@ -122,7 +122,7 @@ function setupDiagramLayout(mode) {
     const isEnc = mode === 'encrypt';
 
     // Add IV block at Col 0 (Cipher line)
-    canvas.addBlock({ id: `cipher-0`, x: X_COLS[0], y: Y_CIPHER, width: 120, height: 45, label: `IV`, isInput: true, initialOpacity: 1, className: 'block-cipher-mid' });
+    canvas.addBlock({ id: `cipher-0`, x: X_COLS[0], y: Y_CIPHER, width: 120, height: 45, label: `IV`, isInput: true, initialOpacity: 1, className: 'block-iv' });
 
     // Add elements for columns 0 to 3
     for (let i = 0; i < 4; i++) {
@@ -274,11 +274,18 @@ async function playCBCAnimation() {
                 ]
             });
 
-            // 3. Highlight XOR, show intermediate value
+            // 3A. Highlight XOR
             seq.addStep({
-                duration: 800,
+                duration: 400,
                 actions: [
-                    { type: 'highlight', elementId: `xor-${i}`, active: true },
+                    { type: 'highlight', elementId: `xor-${i}`, active: true }
+                ]
+            });
+
+            // 3B. Show intermediate value
+            seq.addStep({
+                duration: 400,
+                actions: [
                     { type: 'showValue', elementId: `xor-res-${i}`, value: formatHex16(c.xorResult) },
                     { type: 'fade', elementId: `xor-res-${i}`, opacity: 1 }
                 ]
@@ -388,26 +395,39 @@ async function playCBCAnimation() {
             ]
         });
 
-        // 4. Show decrypted intermediates, show arrows to Plain and XOR symbol
+        // 4. Show decrypted intermediates, show XOR symbol
         seq.addStep({
             duration: 800,
             actions: [
                 ...calcs.map((c, idx) => [
                     { type: 'showValue', elementId: `dec-res-${idx}`, value: formatHex16(c.decResult) },
                     { type: 'fade', elementId: `dec-res-${idx}`, opacity: 1 },
-                    { type: 'fade', elementId: `arrow-dec-c-${idx}`, opacity: 1 },
                     { type: 'fade', elementId: `xor-${idx}`, opacity: 1 }
                 ]).flat()
             ]
         });
 
-        // 5. Highlight XOR gates and show outputs to Plaintexts
+        // 5A. Highlight XOR gates
         seq.addStep({
-            duration: 800,
+            duration: 400,
             actions: [
-                ...calcs.map((c, idx) => [
-                    { type: 'highlight', elementId: `xor-${idx}`, active: true }
-                ]).flat()
+                ...calcs.map((c, idx) => ({
+                    type: 'highlight',
+                    elementId: `xor-${idx}`,
+                    active: true
+                }))
+            ]
+        });
+
+        // 5B. Show output arrows to Plaintexts
+        seq.addStep({
+            duration: 400,
+            actions: [
+                ...calcs.map((c, idx) => ({
+                    type: 'fade',
+                    elementId: `arrow-c-p-${idx}`,
+                    opacity: 1
+                }))
             ]
         });
 
@@ -453,7 +473,7 @@ async function playCBCAnimation() {
                 ...calcs.map((c, idx) => [
                     { type: 'fade', elementId: `arrow-c-key-${idx}`, opacity: 0 },
                     { type: 'fade', elementId: `arrow-key-dec-${idx}`, opacity: 0 },
-                    { type: 'fade', elementId: `arrow-dec-c-${idx}`, opacity: 0 }
+                    { type: 'fade', elementId: `arrow-c-p-${idx}`, opacity: 0 }
                 ]).flat()
             ]
         });

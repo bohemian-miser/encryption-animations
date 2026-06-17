@@ -103,21 +103,50 @@ function updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut) {
 const canvas = new EncryptionAnimCanvas('#diagram-svg', { hexPaths: HEX_PATHS });
 document.getElementById('diagram-svg').classList.add('canvas-feistel');
 
-// Add layout elements
-canvas.addBlock({ id: 'l0', x: 120, y: 30, width: 120, height: 45, label: 'L₀', isInput: true });
-canvas.addBlock({ id: 'r0', x: 480, y: 30, width: 120, height: 45, label: 'R₀', isInput: true });
-canvas.addXOR({ id: 'xor', x: 220, y: 100, initialOpacity: 0 });
-canvas.addKey({ id: 'k0', x: 480, y: 170, type: 'hardware', showF: true });
-canvas.addBlock({ id: 'f-val', x: 320, y: 170, width: 80, height: 45, label: '', initialOpacity: 0 });
+let currentMode = 'encrypt';
 
-canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁ = R₀', isInput: true, initialOpacity: 0 });
-canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁ = L₀ ⊕ F(R₀,K₀)', isInput: true, initialOpacity: 0 });
+function setupDiagramLayout(mode) {
+    const svgEl = document.getElementById('diagram-svg');
+    const defs = svgEl.querySelector('defs');
+    svgEl.innerHTML = '';
+    if (defs) svgEl.appendChild(defs);
+    canvas.elements.clear();
+    canvas.setMode(mode);
+    const isEnc = mode === 'encrypt';
 
-// Add arrows
-canvas.addArrow({ id: 'arrow-r0-k0', from: 'r0', to: 'k0', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
-canvas.addArrow({ id: 'arrow-k0-fval', from: 'k0', to: 'f-val', fromAnchor: 'left', toAnchor: 'right', type: 'straight', initialOpacity: 0 });
-canvas.addArrow({ id: 'arrow-fval-r1', from: 'f-val', to: 'r1', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
-canvas.addArrow({ id: 'arrow-r0-l1', from: 'r0', to: 'l1', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
+    if (isEnc) {
+        canvas.addBlock({ id: 'l0', x: 120, y: 30, width: 120, height: 45, label: 'L₀', isInput: true, className: 'block-plain' });
+        canvas.addBlock({ id: 'r0', x: 480, y: 30, width: 120, height: 45, label: 'R₀', isInput: true, className: 'block-plain' });
+        canvas.addXOR({ id: 'xor', x: 220, y: 100, initialOpacity: 0 });
+        canvas.addKey({ id: 'k0', x: 480, y: 170, type: 'hardware', showF: true });
+        canvas.addBlock({ id: 'f-val', x: 320, y: 170, width: 80, height: 45, label: '', initialOpacity: 0 });
+
+        canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁ = R₀', isInput: true, initialOpacity: 0, className: 'block-cipher-mid' });
+        canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁ = L₀ ⊕ F(R₀,K₀)', isInput: true, initialOpacity: 0, className: 'block-cipher-mid' });
+
+        // Add arrows
+        canvas.addArrow({ id: 'arrow-r0-k0', from: 'r0', to: 'k0', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-k0-fval', from: 'k0', to: 'f-val', fromAnchor: 'left', toAnchor: 'right', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-fval-r1', from: 'f-val', to: 'r1', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-r0-l1', from: 'r0', to: 'l1', fromAnchor: 'bottom', toAnchor: 'top', type: 'straight', initialOpacity: 0 });
+    } else {
+        // Decrypt mode: inputs at bottom (Y=310), outputs at top (Y=30)
+        canvas.addBlock({ id: 'l1', x: 120, y: 310, width: 120, height: 45, label: 'L₁', isInput: true, className: 'block-cipher-mid' });
+        canvas.addBlock({ id: 'r1', x: 480, y: 310, width: 120, height: 45, label: 'R₁', isInput: true, className: 'block-cipher-mid' });
+        canvas.addXOR({ id: 'xor', x: 220, y: 240, initialOpacity: 0 });
+        canvas.addKey({ id: 'k0', x: 480, y: 170, type: 'hardware', showF: true });
+        canvas.addBlock({ id: 'f-val', x: 320, y: 170, width: 80, height: 45, label: '', initialOpacity: 0 });
+
+        canvas.addBlock({ id: 'l0', x: 120, y: 30, width: 120, height: 45, label: 'L₀ = R₁ ⊕ F(L₁,K₀)', isInput: false, initialOpacity: 0, className: 'block-plain' });
+        canvas.addBlock({ id: 'r0', x: 480, y: 30, width: 120, height: 45, label: 'R₀ = L₁', isInput: false, initialOpacity: 0, className: 'block-plain' });
+
+        // Add arrows
+        canvas.addArrow({ id: 'arrow-l1-k0', from: 'l1', to: 'k0', fromAnchor: 'top', toAnchor: 'bottom', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-k0-fval', from: 'k0', to: 'f-val', fromAnchor: 'left', toAnchor: 'right', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-fval-l0', from: 'f-val', to: 'l0', fromAnchor: 'top', toAnchor: 'bottom', type: 'straight', initialOpacity: 0 });
+        canvas.addArrow({ id: 'arrow-l1-r0', from: 'l1', to: 'r0', fromAnchor: 'top', toAnchor: 'bottom', type: 'straight', initialOpacity: 0 });
+    }
+}
 
 // Encryption Cycle
 async function runEncryptionCycle(onComplete) {
@@ -127,7 +156,7 @@ async function runEncryptionCycle(onComplete) {
     const l1 = r0;
     const finalOut = (l1 << 8) | r1;
 
-    canvas.setMode('encrypt');
+    setupDiagramLayout('encrypt');
     canvas.reset();
 
     const seq = new AnimationSequence(canvas);
@@ -174,30 +203,37 @@ async function runEncryptionCycle(onComplete) {
         ]
     });
 
-    // Step 4: XOR evaluates to R1 (XOR fades in, f-val to R1)
+    // Step 4: XOR fades in
     seq.addStep({
-        duration: BASE_TIMINGS.active / 2,
+        duration: BASE_TIMINGS.active / 3,
         actions: [
             { type: 'fade', elementId: 'xor', opacity: 1 },
-            { type: 'highlight', elementId: 'xor', active: true },
-            { type: 'fade', elementId: 'arrow-fval-r1', opacity: 1 },
+            { type: 'highlight', elementId: 'xor', active: true }
+        ]
+    });
+
+    // Step 5: Arrow-to-target fades in
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 3,
+        actions: [
+            { type: 'fade', elementId: 'arrow-fval-r1', opacity: 1 }
+        ]
+    });
+
+    // Step 6: Target shows (R1 value, crossover R0 -> L1, and update math)
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 3,
+        actions: [
             { type: 'showValue', elementId: 'r1', value: format_right_split(r1) },
             { type: 'fade', elementId: 'r1', opacity: 1 },
+            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 1 },
+            { type: 'showValue', elementId: 'l1', value: format_left_split(l1) },
+            { type: 'fade', elementId: 'l1', opacity: 1 },
             ...(fadeEnabled ? [
                 { type: 'fade', elementId: 'l0', opacity: 0 },
                 { type: 'fade', elementId: 'r0', opacity: 0 }
             ] : []),
             { type: 'custom', callback: () => updateMathPanel(l0, r0, k0, fOut, r1, l1, finalOut) }
-        ]
-    });
-
-    // Step 5: Crossover R0 -> L1 (Finally show arrow from R0 to L1)
-    seq.addStep({
-        duration: BASE_TIMINGS.active / 2,
-        actions: [
-            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 1 },
-            { type: 'showValue', elementId: 'l1', value: format_left_split(l1) },
-            { type: 'fade', elementId: 'l1', opacity: 1 }
         ]
     });
 
@@ -241,39 +277,39 @@ async function runDecryptionCycle(onComplete) {
     
     const finalOut = (decR1 << 8) | decL1; 
 
-    canvas.setMode('decrypt');
+    setupDiagramLayout('decrypt');
     canvas.reset();
 
     const seq = new AnimationSequence(canvas);
 
-    // Step 1: Idle (Show swapped inputs decL0, decR0)
+    // Step 1: Idle (Inputs at bottom: l1 showing decR0, r1 showing decL0)
     seq.addStep({
         duration: BASE_TIMINGS.idle,
         actions: [
-            { type: 'showValue', elementId: 'l0', value: format_left_split(decL0) },
-            { type: 'showValue', elementId: 'r0', value: format_right_split(decR0) },
-            { type: 'fade', elementId: 'l0', opacity: 1 },
-            { type: 'fade', elementId: 'r0', opacity: 1 },
-            { type: 'fade', elementId: 'l1', opacity: fadeEnabled ? 0 : 1 },
-            { type: 'fade', elementId: 'r1', opacity: fadeEnabled ? 0 : 1 },
+            { type: 'showValue', elementId: 'l1', value: format_left_split(decR0) },
+            { type: 'showValue', elementId: 'r1', value: format_right_split(decL0) },
+            { type: 'fade', elementId: 'l1', opacity: 1 },
+            { type: 'fade', elementId: 'r1', opacity: 1 },
+            { type: 'fade', elementId: 'l0', opacity: fadeEnabled ? 0 : 1 },
+            { type: 'fade', elementId: 'r0', opacity: fadeEnabled ? 0 : 1 },
             { type: 'setLabel', elementId: 'k0', label: `K₀ = ${format_hex8(k0)}` },
             { type: 'showValue', elementId: 'f-val', value: '' },
             { type: 'fade', elementId: 'f-val', opacity: 0 },
             { type: 'highlight', elementId: 'k0', active: false },
             { type: 'highlight', elementId: 'xor', active: false },
-            { type: 'fade', elementId: 'arrow-r0-k0', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-l1-k0', opacity: 0 },
             { type: 'fade', elementId: 'arrow-k0-fval', opacity: 0 },
-            { type: 'fade', elementId: 'arrow-fval-r1', opacity: 0 },
-            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-fval-l0', opacity: 0 },
+            { type: 'fade', elementId: 'arrow-l1-r0', opacity: 0 },
             { type: 'custom', callback: clearMathPanel }
         ]
     });
 
-    // Step 2: Start (decR0 to Key/F)
+    // Step 2: Start (decR0 to Key/F via arrow-l1-k0)
     seq.addStep({
         duration: BASE_TIMINGS.start,
         actions: [
-            { type: 'fade', elementId: 'arrow-r0-k0', opacity: 1 }
+            { type: 'fade', elementId: 'arrow-l1-k0', opacity: 1 }
         ]
     });
 
@@ -288,30 +324,37 @@ async function runDecryptionCycle(onComplete) {
         ]
     });
 
-    // Step 4: XOR evaluates to decR1 (XOR fades in, f-val to R1)
+    // Step 4: XOR fades in
     seq.addStep({
-        duration: BASE_TIMINGS.active / 2,
+        duration: BASE_TIMINGS.active / 3,
         actions: [
             { type: 'fade', elementId: 'xor', opacity: 1 },
-            { type: 'highlight', elementId: 'xor', active: true },
-            { type: 'fade', elementId: 'arrow-fval-r1', opacity: 1 },
-            { type: 'showValue', elementId: 'r1', value: format_right_split(decR1) },
-            { type: 'fade', elementId: 'r1', opacity: 1 },
-            ...(fadeEnabled ? [
-                { type: 'fade', elementId: 'l0', opacity: 0 },
-                { type: 'fade', elementId: 'r0', opacity: 0 }
-            ] : []),
-            { type: 'custom', callback: () => updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut) }
+            { type: 'highlight', elementId: 'xor', active: true }
         ]
     });
 
-    // Step 5: Crossover decR0 -> decL1 (Finally show arrow from R0 to L1)
+    // Step 5: Arrow-to-target fades in
     seq.addStep({
-        duration: BASE_TIMINGS.active / 2,
+        duration: BASE_TIMINGS.active / 3,
         actions: [
-            { type: 'fade', elementId: 'arrow-r0-l1', opacity: 1 },
-            { type: 'showValue', elementId: 'l1', value: format_left_split(decL1) },
-            { type: 'fade', elementId: 'l1', opacity: 1 }
+            { type: 'fade', elementId: 'arrow-fval-l0', opacity: 1 }
+        ]
+    });
+
+    // Step 6: Target shows (L0 value in l0, crossover L1 -> R0 via arrow-l1-r0)
+    seq.addStep({
+        duration: BASE_TIMINGS.active / 3,
+        actions: [
+            { type: 'showValue', elementId: 'l0', value: format_left_split(decR1) },
+            { type: 'fade', elementId: 'l0', opacity: 1 },
+            { type: 'fade', elementId: 'arrow-l1-r0', opacity: 1 },
+            { type: 'showValue', elementId: 'r0', value: format_right_split(decL1) },
+            { type: 'fade', elementId: 'r0', opacity: 1 },
+            ...(fadeEnabled ? [
+                { type: 'fade', elementId: 'l1', opacity: 0 },
+                { type: 'fade', elementId: 'r1', opacity: 0 }
+            ] : []),
+            { type: 'custom', callback: () => updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut) }
         ]
     });
 
@@ -320,10 +363,10 @@ async function runDecryptionCycle(onComplete) {
         duration: BASE_TIMINGS.end,
         actions: [
             ...(fadeEnabled ? [
-                { type: 'fade', elementId: 'arrow-r0-k0', opacity: 0 },
+                { type: 'fade', elementId: 'arrow-l1-k0', opacity: 0 },
                 { type: 'fade', elementId: 'arrow-k0-fval', opacity: 0 },
-                { type: 'fade', elementId: 'arrow-fval-r1', opacity: 0 },
-                { type: 'fade', elementId: 'arrow-r0-l1', opacity: 0 },
+                { type: 'fade', elementId: 'arrow-fval-l0', opacity: 0 },
+                { type: 'fade', elementId: 'arrow-l1-r0', opacity: 0 },
                 { type: 'highlight', elementId: 'k0', active: false },
                 { type: 'highlight', elementId: 'xor', active: false },
                 { type: 'fade', elementId: 'xor', opacity: 0 },
@@ -335,6 +378,9 @@ async function runDecryptionCycle(onComplete) {
     activePhase = 'decrypt';
     currentSequence = seq;
     await seq.play();
+    if (currentSequence === seq) {
+        showFullStaticDiagram();
+    }
     activePhase = null;
     if (onComplete) onComplete();
 }
@@ -343,7 +389,7 @@ function stopAnimation() {
     if (currentSequence) {
         currentSequence.stop();
     }
-    canvas.reset();
+    showFullStaticDiagram();
     loopActive = false;
     btnLoop.textContent = 'Auto Loop';
     btnPause.style.display = 'none';
@@ -351,8 +397,10 @@ function stopAnimation() {
 
 function runAutoLoop() {
     if (!loopActive) return;
+    currentMode = 'encrypt';
     runEncryptionCycle(() => {
         if (!loopActive) return;
+        currentMode = 'decrypt';
         runDecryptionCycle(() => {
             if (!loopActive) return;
             runAutoLoop();
@@ -360,35 +408,136 @@ function runAutoLoop() {
     });
 }
 
+function showFullStaticDiagram() {
+    const { l0, r0, k0 } = getInputs();
+    setupDiagramLayout(currentMode);
+    canvas.reset();
+
+    const isEnc = currentMode === 'encrypt';
+
+    // Highlight key active in static diagram
+    canvas.setElementActive('k0', true);
+    // Show XOR gate
+    canvas.setOpacity('xor', 1);
+
+    if (isEnc) {
+        const fOut = r0 ^ k0;
+        const r1Val = l0 ^ fOut;
+        const l1Val = r0;
+        const finalOut = (l1Val << 8) | r1Val;
+
+        canvas.renderText('l0', format_left_split(l0));
+        canvas.setOpacity('l0', 1);
+        canvas.renderText('r0', format_right_split(r0));
+        canvas.setOpacity('r0', 1);
+
+        canvas.renderText('f-val', format_hex8(fOut));
+        canvas.setOpacity('f-val', 1);
+
+        canvas.renderText('l1', format_left_split(l1Val));
+        canvas.setOpacity('l1', 1);
+        canvas.renderText('r1', format_right_split(r1Val));
+        canvas.setOpacity('r1', 1);
+
+        // Arrows visible
+        canvas.setOpacity('arrow-r0-k0', 1);
+        canvas.setOpacity('arrow-k0-fval', 1);
+        canvas.setOpacity('arrow-fval-r1', 1);
+        canvas.setOpacity('arrow-r0-l1', 1);
+
+        updateMathPanel(l0, r0, k0, fOut, r1Val, l1Val, finalOut);
+    } else {
+        const fOutEnc = r0 ^ k0;
+        const cipherR = l0 ^ fOutEnc;
+        const cipherL = r0;
+        
+        const decL0 = cipherR;
+        const decR0 = cipherL;
+        const fOutDec = decR0 ^ k0;
+        const decR1 = decL0 ^ fOutDec;
+        const decL1 = decR0;
+        const finalOut = (decR1 << 8) | decL1;
+
+        canvas.renderText('l1', format_left_split(decR0));
+        canvas.setOpacity('l1', 1);
+        canvas.renderText('r1', format_right_split(decL0));
+        canvas.setOpacity('r1', 1);
+
+        canvas.renderText('f-val', format_hex8(fOutDec));
+        canvas.setOpacity('f-val', 1);
+
+        canvas.renderText('l0', format_left_split(decR1));
+        canvas.setOpacity('l0', 1);
+        canvas.renderText('r0', format_right_split(decL1));
+        canvas.setOpacity('r0', 1);
+
+        // Arrows visible
+        canvas.setOpacity('arrow-l1-k0', 1);
+        canvas.setOpacity('arrow-k0-fval', 1);
+        canvas.setOpacity('arrow-fval-l0', 1);
+        canvas.setOpacity('arrow-l1-r0', 1);
+
+        updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);
+    }
+}
+
 async function updateInitialVisuals() {
     const { l0, r0, k0 } = getInputs();
+    setupDiagramLayout(currentMode);
     canvas.reset();
-    canvas.renderText('l0', format_left_split(l0));
-    canvas.renderText('r0', format_right_split(r0));
-    canvas.setOpacity('l0', 1);
-    canvas.setOpacity('r0', 1);
-    canvas.setOpacity('l1', fadeEnabled ? 0 : 1);
-    canvas.setOpacity('r1', fadeEnabled ? 0 : 1);
-    canvas.setElementLabel('k0', `K₀ = ${format_hex8(k0)}`);
-    canvas.setElementLabel('f-val', '');
-    canvas.setOpacity('f-val', 0);
-    canvas.setOpacity('arrow-l0-xor', 0);
-    canvas.setOpacity('arrow-r0-f', 0);
-    canvas.setOpacity('arrow-f-xor', 0);
-    canvas.setOpacity('arrow-key-f', 0);
-    canvas.setOpacity('arrow-xor-r1', 0);
-    canvas.setOpacity('arrow-r0-l1', 0);
+
+    const isEnc = currentMode === 'encrypt';
+
+    if (isEnc) {
+        canvas.renderText('l0', format_left_split(l0));
+        canvas.renderText('r0', format_right_split(r0));
+        canvas.setOpacity('l0', 1);
+        canvas.setOpacity('r0', 1);
+        canvas.setOpacity('l1', fadeEnabled ? 0 : 1);
+        canvas.setOpacity('r1', fadeEnabled ? 0 : 1);
+        canvas.setElementLabel('k0', `K₀ = ${format_hex8(k0)}`);
+        canvas.setElementLabel('f-val', '');
+        canvas.setOpacity('f-val', 0);
+        canvas.setOpacity('xor', 0);
+
+        canvas.setOpacity('arrow-r0-k0', 0);
+        canvas.setOpacity('arrow-k0-fval', 0);
+        canvas.setOpacity('arrow-fval-r1', 0);
+        canvas.setOpacity('arrow-r0-l1', 0);
+    } else {
+        const fOutEnc = r0 ^ k0;
+        const cipherR = l0 ^ fOutEnc;
+        const cipherL = r0;
+
+        canvas.renderText('l1', format_left_split(cipherL)); // L1
+        canvas.renderText('r1', format_right_split(cipherR)); // R1
+        canvas.setOpacity('l1', 1);
+        canvas.setOpacity('r1', 1);
+        canvas.setOpacity('l0', fadeEnabled ? 0 : 1);
+        canvas.setOpacity('r0', fadeEnabled ? 0 : 1);
+        canvas.setElementLabel('k0', `K₀ = ${format_hex8(k0)}`);
+        canvas.setElementLabel('f-val', '');
+        canvas.setOpacity('f-val', 0);
+        canvas.setOpacity('xor', 0);
+
+        canvas.setOpacity('arrow-l1-k0', 0);
+        canvas.setOpacity('arrow-k0-fval', 0);
+        canvas.setOpacity('arrow-fval-l0', 0);
+        canvas.setOpacity('arrow-l1-r0', 0);
+    }
     clearMathPanel();
 }
 
 // Event Listeners
 btnEncrypt.addEventListener('click', () => {
     stopAnimation();
+    currentMode = 'encrypt';
     runEncryptionCycle();
 });
 
 btnDecrypt.addEventListener('click', () => {
     stopAnimation();
+    currentMode = 'decrypt';
     runDecryptionCycle();
 });
 
@@ -417,7 +566,7 @@ rangeSpeed.addEventListener('input', (e) => {
 chkFade.addEventListener('change', () => {
     fadeEnabled = chkFade.checked;
     if (activePhase === null) {
-        updateInitialVisuals();
+        showFullStaticDiagram();
     }
 });
 
@@ -447,18 +596,18 @@ calcB.addEventListener('input', runCalculator);
 
 txtPlaintext.addEventListener('input', () => {
     if (activePhase === null) {
-        updateInitialVisuals();
+        showFullStaticDiagram();
     }
 });
 
 txtKey.addEventListener('input', () => {
     if (activePhase === null) {
-        updateInitialVisuals();
+        showFullStaticDiagram();
     }
 });
 
 // Initialize
 fadeEnabled = chkFade.checked;
 canvas.setSpeed(animationSpeed);
-updateInitialVisuals();
+showFullStaticDiagram();
 runCalculator();

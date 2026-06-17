@@ -52,8 +52,9 @@ h1 {
 }
 
 .box-outline {
-    fill: #000;
-    stroke: none;
+    fill: #ffffff;
+    stroke: #151513;
+    stroke-width: 5px;
 }
 
 .connector-container {
@@ -143,7 +144,7 @@ h1 {
 }
 
 .asymmetric-layout #diagram-svg .key-group.active .key-svg {
-    animation: wiggle-pulse-anim 1.2s infinite ease-in-out;
+    animation: key-wiggle-only 1.2s infinite ease-in-out;
 }
 
 /* Active state rules for keys globally */
@@ -351,6 +352,14 @@ h1 {
     50% { transform: rotate(0deg) scale(1.08); }
     75% { transform: rotate(-4deg) scale(1.04); }
     100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes key-wiggle-only {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(4deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-4deg); }
+    100% { transform: rotate(0deg); }
 }
 
 /* Diagonal Arrows for Asymmetric */
@@ -714,13 +723,17 @@ h1 {
     color: #007bff;
 }
 
-/* Custom subtle colors for CBC plaintext & middle cipher blocks */
+/* Custom subtle colors for CBC plaintext, cipher blocks, and IV */
 .block-group.block-plain .box-outline {
-    fill: #f0faf0 !important;
-    stroke: #a2caa2 !important;
+    fill: #ffffff !important;
+    stroke: #2e7d32 !important;
 }
 .block-group.block-cipher-mid .box-outline {
-    fill: #faf0f0 !important;
-    stroke: #caa2a2 !important;
+    fill: #ffffff !important;
+    stroke: #c62828 !important;
+}
+.block-group.block-iv .box-outline {
+    fill: #ffffff !important;
+    stroke: #1565c0 !important;
 }
 

@@ -102,8 +102,8 @@ const canvas = new EncryptionAnimCanvas('#diagram-svg', { hexPaths: HEX_PATHS })
 
 // Add layout elements
 canvas.addBlock({ id: 'plain', x: 180, y: 170, width: 220, height: 60, label: 'Plaintext', isInput: true });
-canvas.addKey({ id: 'key-public', x: 400, y: 100, type: 'hardware', label: 'Public Key (e, n)', rotation: 90, className: 'public', size: 160 });
-canvas.addKey({ id: 'key-private', x: 400, y: 240, type: 'hardware', label: 'Private Key (d, n)', rotation: -90, className: 'private', size: 160 });
+canvas.addKey({ id: 'key-public', x: 400, y: 100, type: 'hardware', label: 'Public Key (e, n)', rotation: 90, className: 'public', size: 80 });
+canvas.addKey({ id: 'key-private', x: 400, y: 240, type: 'hardware', label: 'Private Key (d, n)', rotation: -90, className: 'private', size: 80 });
 canvas.addBlock({ id: 'cipher', x: 620, y: 170, width: 220, height: 60, label: 'Ciphertext', isInput: false, initialOpacity: 0 });
 
 // Add arrows

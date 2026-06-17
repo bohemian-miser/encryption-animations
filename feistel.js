@@ -39,7 +39,7 @@ const BASE_TIMINGS = {
     idle: 300,
     start: 1000,   
     middle: 1200,  
-    active: 1000,  
+    active: 2000,  
     end: 500
 };
 
@@ -504,9 +504,7 @@ function showFullStaticDiagram() {
         // Arrows visible
         canvas.setOpacity('arrow-l1-k0', 1);
         canvas.setOpacity('arrow-k0-fval', 1);
-        canvas.setOpacity('arrow-r1-xor', 1);
-        canvas.setOpacity('arrow-fval-xor', 1);
-        canvas.setOpacity('arrow-xor-l0', 1);
+        canvas.setOpacity('arrow-fval-l0', 1);
         canvas.setOpacity('arrow-l1-r0', 1);
 
         updateMathPanel(decL0, decR0, k0, fOutDec, decR1, decL1, finalOut);

@@ -16,107 +16,87 @@
         </svg>
     </a>
 
-    <div class="page-wrapper">
-        <!-- Main Interactive Space -->
-        <div class="main-content">
-            <div class="container">
-                <h1>Feistel Round Animation</h1>
-                
-                <div class="animation-space feistel-layout">
+    <div class="container">
+        <h1>Feistel Round Animation</h1>
+        
         <div class="animation-space feistel-layout">
-            <svg id="diagram-svg" viewBox="0 0 600 340"></svg>
+            <svg id="diagram-svg" viewBox="0 -15 600 355" style="overflow: visible;"></svg>
         </div>
-                </div>
 
-                <!-- Feistel Math Visualization -->
-                <div class="math-panel" id="math-panel">
-                    <h3>Feistel Round Process</h3>
-                    <div class="binary-row">
-                        <span class="label">Inputs:</span>
-                        <span class="value">L₀ = <span id="math-l0-val">00__</span>, R₀ = <span id="math-r0-val">__00</span></span>
-                    </div>
-                    <div class="binary-row">
-                        <span class="label">F Function:</span>
-                        <span class="value">F(R₀, K₀) = R₀ ⊕ K₀ = <span id="math-r0-expr">00</span> ⊕ <span id="math-k0-expr">00</span> = <span id="math-f-val">00</span></span>
-                    </div>
-                    <div class="binary-row">
-                        <span class="label">XOR:</span>
-                        <span class="value">R₁ = L₀ ⊕ F(R₀, K₀) = <span id="math-l0-expr">00</span> ⊕ <span id="math-f-expr">00</span> = <span id="math-r1-val">__00</span></span>
-                    </div>
-                    <div class="binary-row">
-                        <span class="label">Crossover:</span>
-                        <span class="value">L₁ = R₀ = <span id="math-l1-val">00__</span></span>
-                    </div>
-                    <div class="binary-row" style="margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
-                        <span class="label">Output:</span>
-                        <span class="value" style="font-weight: bold;">L₁R₁ = <span id="math-out-hex">0000</span></span>
-                    </div>
-                </div>
-
-                <!-- Controls -->
-                <div class="controls">
-                    <div class="control-group">
-                        <label for="plaintext-input">Plaintext (Hex, 4 chars):</label>
-                        <input type="text" id="plaintext-input" value="AAAA" maxlength="4">
-                    </div>
-                    <div class="control-group">
-                        <label for="key-input">Key (Hex, 2 chars):</label>
-                        <input type="text" id="key-input" value="BB" maxlength="2">
-                    </div>
-                    <div class="control-group">
-                        <label for="fade-toggle" style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="fade-toggle" checked>
-                            Enable Fading
-                        </label>
-                    </div>
-                    <div class="control-group">
-                        <button id="btn-encrypt">Run Encryption</button>
-                        <button id="btn-decrypt">Run Decryption</button>
-                        <button id="btn-loop">Auto Loop</button>
-                        <button id="btn-pause" style="display: none; background-color: #dc3545;">Pause</button>
-                    </div>
-                    <div class="control-group">
-                        <label for="speed-input">Animation Speed:</label>
-                        <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1">
-                        <span id="speed-val">1.0x</span>
-                    </div>
-                </div>
-                
-                <div class="page-switcher">
-                    <a href="index.html">Symmetric (XOR/AES)</a>
-                    <span class="divider">|</span>
-                    <a href="block.html">Block Ciphers (CBC)</a>
-                    <span class="divider">|</span>
-                    <a href="feistel.html" class="active">Feistel Round</a>
-                    <span class="divider">|</span>
-                    <a href="asymmetric.html">Asymmetric (RSA)</a>
-                </div>
+        <!-- Feistel Math Visualization -->
+        <div class="math-panel" id="math-panel">
+            <h3>Feistel Round Process</h3>
+            <div class="binary-row">
+                <span class="label">Inputs:</span>
+                <span class="value">L₀ = <span id="math-l0-val">00__</span>, R₀ = <span id="math-r0-val">__00</span></span>
+            </div>
+            <div class="binary-row">
+                <span class="label">F Function:</span>
+                <span class="value">F(R₀, K₀) = R₀ ⊕ K₀ = <span id="math-r0-expr">00</span> ⊕ <span id="math-k0-expr">00</span> = <span id="math-f-val">00</span></span>
+            </div>
+            <div class="binary-row">
+                <span class="label">XOR:</span>
+                <span class="value">R₁ = L₀ ⊕ F(R₀, K₀) = <span id="math-l0-expr">00</span> ⊕ <span id="math-f-expr">00</span> = <span id="math-r1-val">__00</span></span>
+            </div>
+            <div class="binary-row">
+                <span class="label">Crossover:</span>
+                <span class="value">L₁ = R₀ = <span id="math-l1-val">00__</span></span>
+            </div>
+            <div class="binary-row" style="margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 10px;">
+                <span class="label">Output:</span>
+                <span class="value" style="font-weight: bold;">L₁R₁ = <span id="math-out-hex">0000</span></span>
             </div>
         </div>
 
-        <!-- Sidebar Panel for XOR Calculator -->
-        <div class="sidebar">
-            <div class="calculator-panel">
-                <h3>Hex XOR Calculator</h3>
-                <div class="calc-row">
-                    <div class="calc-input-group">
-                        <label for="calc-a">Value A (Hex)</label>
-                        <input type="text" id="calc-a" value="AA" placeholder="e.g. AA" maxlength="4">
-                    </div>
-                    <span class="calc-op">⊕</span>
-                    <div class="calc-input-group">
-                        <label for="calc-b">Value B (Hex)</label>
-                        <input type="text" id="calc-b" value="BB" placeholder="e.g. BB" maxlength="4">
-                    </div>
+        <!-- Controls -->
+        <div class="controls">
+            <!-- Horizontally concatenated input fields -->
+            <div class="control-group input-controls-row" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="plaintext-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Plaintext:</label>
+                    <input type="text" id="plaintext-input" value="AAAA" maxlength="4" style="width: 65px; height: 28px; padding: 4px; box-sizing: border-box;">
                 </div>
-                <div class="calc-result-row">
-                    <span class="calc-result-label">Result:</span>
-                    <span id="calc-result" class="calc-result-val">11</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="key-input" style="width: auto; font-weight: bold; color: #555; margin: 0;">Key:</label>
+                    <input type="text" id="key-input" value="BB" maxlength="2" style="width: 45px; height: 28px; padding: 4px; box-sizing: border-box;">
                 </div>
-                <div class="calc-help">
-                    <p>Calculates XOR value of Hex A and Hex B. Inputs are padded with leading zeros to match length before XORing.</p>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="width: auto; font-weight: bold; color: #555; margin: 0;">XOR Calc:</label>
+                    <input type="text" id="calc-a" value="AA" placeholder="A" maxlength="4" style="width: 45px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
+                    <span class="calc-op" style="font-weight: bold;">⊕</span>
+                    <input type="text" id="calc-b" value="BB" placeholder="B" maxlength="4" style="width: 45px; text-align: center; height: 28px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; box-sizing: border-box; padding: 4px;">
+                    <span class="calc-op" style="font-weight: bold;">=</span>
+                    <span id="calc-result" class="calc-result-val" style="font-weight: bold; background: #eee; padding: 2px 8px; border-radius: 4px; min-width: 30px; text-align: center; border: 1px solid #ccc; height: 28px; line-height: 22px; box-sizing: border-box; font-family: monospace;">11</span>
                 </div>
             </div>
+            
+            <div class="control-group">
+                <label for="fade-toggle" style="display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="fade-toggle">
+                    Enable Fading
+                </label>
+            </div>
+            <div class="control-group">
+                <button id="btn-encrypt">Run Encryption</button>
+                <button id="btn-decrypt">Run Decryption</button>
+                <button id="btn-loop">Auto Loop</button>
+                <button id="btn-pause" style="display: none; background-color: #dc3545;">Pause</button>
+            </div>
+            <div class="control-group">
+                <label for="speed-input">Animation Speed:</label>
+                <input type="range" id="speed-input" min="0.5" max="3" step="0.1" value="1">
+                <span id="speed-val">1.0x</span>
+            </div>
+        </div>
+        
+        <div class="page-switcher">
+            <a href="index.html">Symmetric (XOR/AES)</a>
+            <span class="divider">|</span>
+            <a href="block.html">Block Ciphers (CBC)</a>
+            <span class="divider">|</span>
+            <a href="feistel.html" class="active">Feistel Round</a>
+            <span class="divider">|</span>
+            <a href="asymmetric.html">Asymmetric (RSA)</a>
         </div>
     </div>
 
